@@ -29,15 +29,13 @@ def do_connect():
 def sleepnow(ms=600000):
     import machine
         
-    # put the device to sleep
-    do_connect("Down")
+    # put the device to sleep [Down param not implemented here yet]
+    # do_connect("Down") 
     print("Debug: Going to Sleep for:", ms, "(ms)")
     machine.deepsleep(ms)
     # After wake from deepsleep state, boots and runs boot.py, main.py
     # This script is generally saved as main.py on esp32 spiflash filesystem
     
-   
-
 
 # https://github.com/daemonhorn/inkplate10-weather/blob/main/NOAA_Weather.py
 def http_get(url):
@@ -110,11 +108,18 @@ def http_get(url):
         else:
             break
     s.close()
-    
-    return res
+
+     # Convert response to string and split off the headers
+    _, body = res.split("\r\n\r\n", 1)  # Split the headers from the body
+
+    return body
+
+
 def loop(timer):
    print("Running main task...")
    fetchAndDisplay() 
+
+
 
 
 def fetchAndDisplay():
@@ -132,6 +137,8 @@ def fetchAndDisplay():
     display = Inkplate(Inkplate.INKPLATE_1BIT)
     display.begin()
 
+    #rotation int 0 = none 1 = 90deg clockwise rotation, 2 = 180deg, 3 = 270deg
+    display.setRotation(3)
     # Set text size to double from the original size, so we can see the text better
     display.setTextSize(2)
 
