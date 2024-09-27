@@ -25,26 +25,93 @@ def do_connect():
             pass
     print("network config:", sta_if.ifconfig())
 
-# This function does a HTTP GET request
-# More info here: https://docs.micropython.org/en/latest/esp8266/tutorial/network_tcp.html
+# Function that puts the esp32 into deepsleep mode
+def sleepnow(ms=600000):
+    import machine
+        
+    # put the device to sleep
+    do_connect("Down")
+    print("Debug: Going to Sleep for:", ms, "(ms)")
+    machine.deepsleep(ms)
+    # After wake from deepsleep state, boots and runs boot.py, main.py
+    # This script is generally saved as main.py on esp32 spiflash filesystem
+    
+   
+
+
+# https://github.com/daemonhorn/inkplate10-weather/blob/main/NOAA_Weather.py
 def http_get(url):
-    import socket
+    import usocket as socket
+    import ussl as ssl
+    af = socket.AF_INET
+    proto = socket.IPPROTO_TCP
+    socktype = socket.SOCK_STREAM
+    socket_timeout = 10 # seconds
+
     res = ""
-    _, _, host, path = url.split("/", 3)
-    addr = socket.getaddrinfo(host, 80)[0][-1]
-    s = socket.socket()
-    s.connect(addr)
-    s.send(bytes("GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (path, host), "utf8"))
+    scheme, _, host, path = url.split("/", 3)
+    #print("scheme: %s, host: %s, path: %s" % (scheme, host, path))
+    #print("url: %s" % url)
+    
+    if scheme == 'https:':
+        port = 443
+    elif scheme == 'http:':
+        port = 80
+    else:
+        raise ValueError("Unsupported URI scheme (%s) in url (%s), only http/https supported" % (scheme,url))
+    
+    for addressinfo in socket.getaddrinfo(host, port, af, socktype, proto):
+        af, socktype, proto, cname, sockaddr = addressinfo
+        #print(".getaddrinfo() complete: (%s)" % str(addressinfo))
+        try:
+            s = socket.socket(af, socktype, proto)
+        except OSError as msg:
+            s = None
+            continue
+        s.settimeout(socket_timeout)
+        try:
+            s.connect(sockaddr)
+        except OSError as msg:
+            s.close()
+            s = None
+            continue
+        break
+    if s is None:
+        print("Failed to connect, Going to sleep...")
+        sleepnow()
+    
+    if scheme == "https:":
+        try:
+            s = ssl.wrap_socket(s, server_hostname=host)
+        except: 
+            print("Failed to wrap socket in ssl, Going to sleep...")
+            sleepnow()
+        
+    buffer =  "GET /%s HTTP/1.0\r\n" % (path)
+    buffer += "Host: %s\r\n" % (host)
+    buffer += "User-Agent: micropython/1.2.0 exampleweather esp32\r\n"
+    buffer += "Accept: application/geo+json\r\n"
+    # HTTP requests must end in an extra CRLF (aka \r\n)
+    buffer += "\r\n"
+#    print("Debug HTTP REQUEST: \r\n%s" % (buffer))
+    try:
+        s.write(bytes(buffer, "utf8"))
+    except:
+        print("Failed to send GET request, Going to sleep...")
+        sleepnow()
     while True:
-        data = s.recv(100)
+        try:
+            data = s.read(1000)
+        except:
+            sleepnow()
+        #print("data: %s" % str(data))
         if data:
             res += str(data, "utf8")
         else:
             break
     s.close()
+    
     return res
-
-
 def loop(timer):
    print("Running main task...")
    fetchAndDisplay() 
