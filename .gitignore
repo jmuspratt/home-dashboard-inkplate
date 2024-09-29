@@ -1,4 +1,5 @@
 .DS_Store
 config.py
-server/creds
+server/config/
+server/creds/
 vendor/

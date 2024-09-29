@@ -1,5 +1,6 @@
 <?php
 require 'vendor/autoload.php';
+require 'config/config.php';
 
 date_default_timezone_set('America/New_York');
 
@@ -9,32 +10,30 @@ use Google\Service\Calendar;
 
 // Step 1: Set up the Google Client with a service account
 $client = new Client();
-$client->setAuthConfig('creds/home-dashboard-inkplate-c7516d44b54c.json'); // Replace with the actual path to your service account key file
+$client->setAuthConfig($keyFilePath); 
 $client->addScope(Calendar::CALENDAR_READONLY); // Set the appropriate scope
 
 // Step 2: Get the Calendar Service
 $service = new Calendar($client);
 
 // Step 3: Fetch the events
-$calendarId = 'q4s7qgb41rmdhp1023hg6od7jc@group.calendar.google.com';
 $events = $service->events->listEvents($calendarId, [
-    'maxResults' => 10,
+    'maxResults' => 30,
     'orderBy' => 'startTime',
     'singleEvents' => true,
     'timeMin' => date('c'), // Fetch future events only
 ]);
 
+
 if (count($events->getItems()) == 0) {
     echo "No upcoming events found.\n";
 } else {
-    echo "Upcoming events:<br />";
+    echo "Upcoming<br />";
   
         // Track the current day to determine when to add a new heading
         $currentDay = null;
 
     foreach ($events->getItems() as $event) {
-
-        // var_dump($event);
 
         
         $summary =  $event->summary ?: 'No summary';
@@ -57,7 +56,8 @@ if (count($events->getItems()) == 0) {
     
             // If this event's date is different from the current day, insert a new heading
           if ($currentDay !== $eventDay) {
-            echo "<h3>$eventDay</h3>";
+            echo "<br />------------------------<br />";
+            echo "<br />$eventDay<br />";
             $currentDay = $eventDay;
         }
             $timeSpan = "{$startTime} - {$endTime}";
@@ -67,7 +67,10 @@ if (count($events->getItems()) == 0) {
         }
 
        // Print the event with formatted times
-       echo "<p>{$timeSpan}: {$summary}</p>";
+       echo "{$timeSpan}: {$summary}<br />";
     }
 }
+
+echo "<br />Updated " .  date('l, F j') . " at " . date('g:i a');
+
 ?>
