@@ -1,7 +1,0 @@
-#!/bin/bash
-
-# Stop the running container
-docker stop dashboard-server-container 2>/dev/null || true
-
-# Remove the stopped container
-docker rm dashboard-server-container 2>/dev/null || true

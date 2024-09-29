@@ -1,5 +1,0 @@
-#!/bin/bash
-
-# Stop, remove, and start the container
-./bin/stop
-./bin/start

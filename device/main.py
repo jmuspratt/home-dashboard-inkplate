@@ -144,7 +144,7 @@ def fetchAndDisplay():
 
     # Print response line by line
     cnt = 0
-    for x in response.split("\n"):
+    for x in response.split("<br />"):
         display.printText(
             10, 20 + cnt, x.upper()
         )  # Default font has only upper case letters

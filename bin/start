@@ -1,8 +1,0 @@
-#!/bin/bash
-
-# Stop and remove any existing container with the same name
-docker stop dashboard-server-container 2>/dev/null || true
-docker rm dashboard-server-container 2>/dev/null || true
-
-# Run the container with the volume attached
-docker run -d -p 8080:80 --name dashboard-server-container -v $(pwd):/var/www/html dashboard-server
