@@ -70,7 +70,7 @@ if (count($events->getItems()) == 0) {
        echo "{$timeSpan}: {$summary}<br />";
     }
 }
-
-echo "<br />Updated " .  date('l, F j') . " at " . date('g:i a');
+echo "<br />------------------------<br />";
+echo "<br />(Updated " .  date('l, F j') . " at " . date('g:i a') . ")";
 
 ?>
