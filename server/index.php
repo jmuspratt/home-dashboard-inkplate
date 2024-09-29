@@ -18,7 +18,7 @@ $service = new Calendar($client);
 
 // Step 3: Fetch the events
 $events = $service->events->listEvents($calendarId, [
-    'maxResults' => 30,
+    'maxResults' => 20,
     'orderBy' => 'startTime',
     'singleEvents' => true,
     'timeMin' => date('c'), // Fetch future events only
