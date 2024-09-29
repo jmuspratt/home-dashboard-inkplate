@@ -63,15 +63,13 @@ $eliza_balance_usd = getBalances($eliza_records)[0];
 $eliza_balance_eur = getBalances($eliza_records)[1];
 
 
-// print_r($willLastFive);
+echo "Today is " .  date('l, F j') . "<br />";
 
-echo "<br />------------------------<br />";
-echo ("Will USD: $" . number_format($will_balance_usd, 2)) . "<br />";
-echo ("Will EUR: €" . number_format($will_balance_eur, 2)) . "<br />";
 
-echo "<br />------------------------<br />";
-echo ("Eliza USD: $" . number_format($eliza_balance_usd, 2)) . "<br />";;
-echo ("Eliza EUR: €" . number_format($eliza_balance_eur, 2)) . "<br />";;
+echo ("<br />ACCOUNT BALANCES");
+echo "<br />------------------------------------------------<br />";
+echo ("Will: $" . number_format($will_balance_usd, 2)) . "<br />";
+echo ("Eliza: $" . number_format($eliza_balance_usd, 2));
 
 
 // foreach ($willLastFive as $record) {
@@ -150,7 +148,7 @@ if (count($events->getItems()) == 0) {
     
             // If this event's date is different from the current day, insert a new heading
           if ($currentDay !== $eventDay) {
-            echo "<br />------------------------<br />";
+            echo "<br />------------------------------------------------<br />";
             echo "<br />$eventDay<br />";
             $currentDay = $eventDay;
         }
@@ -164,7 +162,7 @@ if (count($events->getItems()) == 0) {
        echo "{$timeSpan}: {$summary}<br />";
     }
 }
-echo "<br />------------------------<br />";
+echo "<br />------------------------------------------------<br />";
 echo "<br />(Updated " .  date('l, F j') . " at " . date('g:i a') . ")";
 
 ?>
