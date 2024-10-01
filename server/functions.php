@@ -14,12 +14,6 @@ function get_airtable_records($table, $key, $baseID) {
     ));
     
     $params = array(
-        "sort" => array(
-            array(
-                "field" => "Created Timestamp",
-                "direction" => "desc"
-            )
-        ),
         "pageSize" => 99,
         "maxRecords" => 999
     );
@@ -29,7 +23,9 @@ function get_airtable_records($table, $key, $baseID) {
 
     do {
         $response = $request->getResponse();
-        $allRecords = array_merge($allRecords, $response->records);
+        if ($response):
+            $allRecords = array_merge($allRecords, $response->records);
+        endif;
     } while ($request = $response->next());
 
     return $allRecords;
@@ -76,7 +72,8 @@ function renderCalendar($events) {
     if (count($events->getItems()) == 0) :
         echo "No upcoming events found.\n";
     else :
-        echo ("<br /><br />CALENDAR<br />");
+        echo "<br />------------------------------------------------<br />";
+        echo ("CALENDAR<br />");
         // Track the current day to determine when to add a new heading
         $currentDay = null;
 
@@ -100,7 +97,6 @@ function renderCalendar($events) {
 
                 // If this event's date is different from the current day, insert a new heading
                 if ($currentDay !== $eventDay) :
-                    echo "<br />------------------------------------------------<br />";
                     echo "<br />$eventDay<br />";
                     $currentDay = $eventDay;
                 endif;
@@ -114,7 +110,6 @@ function renderCalendar($events) {
                     $eventDay = (new DateTime($event->start->date))->format('l, F j');
                     
                     if ($currentDay !== $eventDay) :
-                        echo "<br />------------------------------------------------<br />";
                         echo "<br />$eventDay<br />";
                         $currentDay = $eventDay;
                     endif;
@@ -127,6 +122,29 @@ function renderCalendar($events) {
     endif;
 }
 
+function renderLunch($lunch) {
+// Get the day number
+    $today_number = date('N');
+
+// Find the record in $lunches whose Day Number field mathces $today_number
+    $todays_lunch = null;
+    foreach ($lunch as $record) {
+        $fields = $record->fields;
+        $day_number = $fields->{'Day Number'};
+        if ($day_number == $today_number) {
+            $todays_lunch = $fields->{'Meal'};
+            break;
+        }
+    }
+
+// If a lunch was found, display it
+    if ($todays_lunch) {
+        echo "<br />------------------------------------------------<br />";
+        echo ("LUNCH<br />");
+        echo "Today's lunch is: " . $todays_lunch;
+        echo "<br />";
+    }
+}
 
 function renderAllowances($will_records, $eliza_records) {
 
@@ -166,10 +184,11 @@ function renderAllowances($will_records, $eliza_records) {
 
     // }
 
-    echo ("<br />ACCOUNT BALANCES");
     echo "<br />------------------------------------------------<br />";
+    echo ("ACCOUNT BALANCES<br /><br />");
     echo ("Will: $" . number_format($will_balance_usd, 2)) . "<br />";
     echo ("Eliza: $" . number_format($eliza_balance_usd, 2));
+    echo "<br />";
 }
 
 
