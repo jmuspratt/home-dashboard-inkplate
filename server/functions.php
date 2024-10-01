@@ -124,9 +124,9 @@ function renderCalendar($events) {
 
 function renderLunch($lunch) {
 // Get the day number
-    $today_number = date('N');
+    $today_number = date('j');
 
-// Find the record in $lunches whose Day Number field mathces $today_number
+    // Find the record in $lunches whose Day Number field matches $today_number
     $todays_lunch = null;
     foreach ($lunch as $record) {
         $fields = $record->fields;
@@ -137,7 +137,7 @@ function renderLunch($lunch) {
         }
     }
 
-// If a lunch was found, display it
+    // If a lunch was found, display it
     if ($todays_lunch) {
         echo "<br />------------------------------------------------<br />";
         echo ("LUNCH<br />");
