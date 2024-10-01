@@ -140,7 +140,7 @@ function renderLunch($lunch) {
     // If a lunch was found, display it
     if ($todays_lunch) {
         echo "<br />------------------------------------------------<br />";
-        echo ("LUNCH<br />");
+        echo ("LUNCH<br /><br />");
         echo "Today's lunch is: " . $todays_lunch;
         echo "<br />";
     }
