@@ -13,10 +13,17 @@ $simple =  isset($_GET['simple']);
 // Date
 echo "Today is " .  date('l, F j') . "<br />";
 
+// Weather
+$weatherData = getWeather();
+if ($weatherData) :
+    renderWeather($weatherData); 
+endif;
+
+
 // School Lunch
-$lunches = get_airtable_records('Lunches', $airtableApiKey, $airtableBaseID);
-if ($lunches) :
-    renderLunch($lunches);
+$lunchData = get_airtable_records('Lunches', $airtableApiKey, $airtableBaseID);
+if ($lunchData) :
+    renderLunch($lunchData);
 endif;
 
 // Allowances

@@ -6,6 +6,54 @@ use Google\Service\Calendar;
 use TANIOS\Airtable\Airtable;
 
 
+
+function getWeather() {
+
+    // Arlington is 42.41194,-71.14738
+    // Here's what you get for https://api.weather.gov/points/42.41194,-71.14738
+    $forecastUrl = "https://api.weather.gov/gridpoints/BOX/68,92/forecast";
+    // $forecastHourly = "https://api.weather.gov/gridpoints/BOX/68,92/forecast/hourly";
+    // $forecastGridData = "https://api.weather.gov/gridpoints/BOX/68,92";
+    // $observationStations = "https://api.weather.gov/gridpoints/BOX/68,92/stations";
+   
+    // Create a stream context with the User-Agent header
+    $options = [
+        "http" => [
+            "header" => "User-Agent: MyWeatherApp/1.0 (your_email@example.com)"
+        ]
+    ];
+    $context = stream_context_create($options);
+
+    // Get JSON data from the API
+    $jsonData = @file_get_contents($forecastUrl, false, $context);
+    if ($jsonData === FALSE) {
+        echo "Unable to retrieve weather data.";
+        return null;
+    }
+
+    // Convert JSON data into PHP array
+    $weatherData = json_decode($jsonData, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        echo "Error decoding JSON data.";
+        return null;
+    }
+
+    return $weatherData;
+}
+
+function renderWeather($weatherData) {
+    echo "<br />------------------------------------------------<br />";
+    echo "TODAY’s WEATHER<br /><br />";
+
+    if ($weatherData && isset($weatherData['properties']['periods'])) {
+        $todaysWeather = $weatherData['properties']['periods'][0];
+            echo "Forecast: " . $todaysWeather['detailedForecast'];
+    } else {
+        echo "No weather data available.";
+    }
+}
+
+
 function get_airtable_records($table, $key, $baseID) {
     
     $airtable = new Airtable(array(
