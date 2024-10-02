@@ -6,9 +6,7 @@ use Google\Service\Calendar;
 use TANIOS\Airtable\Airtable;
 
 
-
 function getWeather() {
-
     // Arlington is 42.41194,-71.14738
     // Here's what you get for https://api.weather.gov/points/42.41194,-71.14738
     $forecastUrl = "https://api.weather.gov/gridpoints/BOX/68,92/forecast";
@@ -54,7 +52,7 @@ function renderWeather($weatherData) {
 }
 
 
-function get_airtable_records($table, $key, $baseID) {
+function getAirtableRecords($table, $key, $baseID) {
     
     $airtable = new Airtable(array(
         'api_key'   => $key,
@@ -172,37 +170,37 @@ function renderCalendar($events) {
 
 function renderLunch($lunch) {
 // Get the day number
-    $today_number = date('j');
+    $todayNumber = date('j');
 
-    // Find the record in $lunches whose Day Number field matches $today_number
-    $todays_lunch = null;
+    // Find the record in $lunches whose Day Number field matches $todayNumber
+    $todaysLunch = null;
     foreach ($lunch as $record) {
         $fields = $record->fields;
-        $day_number = $fields->{'Day Number'};
-        if ($day_number == $today_number) {
-            $todays_lunch = $fields->{'Meal'};
+        $dayNumber = $fields->{'Day Number'};
+        if ($dayNumber == $todayNumber) {
+            $todaysLunch = $fields->{'Meal'};
             break;
         }
     }
 
     // If a lunch was found, display it
-    if ($todays_lunch) {
+    if ($todaysLunch) {
         echo "<br />------------------------------------------------<br />";
         echo ("LUNCH<br /><br />");
-        echo "Today's lunch is: " . $todays_lunch;
+        echo "Today's lunch is: " . $todaysLunch;
         echo "<br />";
     }
 }
 
-function renderAllowances($will_records, $eliza_records) {
+function renderAllowances($willRecords, $elizaRecords) {
 
-    $willLastFive = array_slice($will_records, 0, 5);
-    $will_balance_usd = getAllowances($will_records)[0];
-    $will_balance_eur = getAllowances($will_records)[1];
+    $willLastFive = array_slice($willRecords, 0, 5);
+    $willBalanceUSD = getAllowances($willRecords)[0];
+    $willBalanceEUR = getAllowances($willRecords)[1];
 
-    $elizaLastFive = array_slice($eliza_records, 0, 5);
-    $eliza_balance_usd = getAllowances($eliza_records)[0];
-    $eliza_balance_eur = getAllowances($eliza_records)[1];
+    $elizaLastFive = array_slice($elizaRecords, 0, 5);
+    $elizaBalanceUSD = getAllowances($elizaRecords)[0];
+    $elizaBalanceEUR = getAllowances($elizaRecords)[1];
 
 
     // foreach ($willLastFive as $record) {
@@ -234,8 +232,8 @@ function renderAllowances($will_records, $eliza_records) {
 
     echo "<br />------------------------------------------------<br />";
     echo ("ACCOUNT BALANCES<br /><br />");
-    echo ("Will: $" . number_format($will_balance_usd, 2)) . "<br />";
-    echo ("Eliza: $" . number_format($eliza_balance_usd, 2));
+    echo ("Will: $" . number_format($willBalanceUSD, 2)) . "<br />";
+    echo ("Eliza: $" . number_format($elizaBalanceUSD, 2));
     echo "<br />";
 }
 

@@ -21,16 +21,16 @@ endif;
 
 
 // School Lunch
-$lunchData = get_airtable_records('Lunches', $airtableApiKey, $airtableBaseID);
+$lunchData = getAirtableRecords('Lunches', $airtableApiKey, $airtableBaseID);
 if ($lunchData) :
     renderLunch($lunchData);
 endif;
 
 // Allowances
-$will_records = get_airtable_records('Will Transactions', $airtableApiKey, $airtableBaseID);
-$eliza_records = get_airtable_records('Eliza Transactions', $airtableApiKey, $airtableBaseID);
-if ($will_records && $eliza_records) :
-    renderAllowances($will_records, $eliza_records);
+$willRecords = getAirtableRecords('Will Transactions', $airtableApiKey, $airtableBaseID);
+$elizaRecords = getAirtableRecords('Eliza Transactions', $airtableApiKey, $airtableBaseID);
+if ($willRecords && $elizaRecords) :
+    renderAllowances($willRecords, $elizaRecords);
 endif;
 
 // Calendar
