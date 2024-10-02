@@ -41,11 +41,12 @@ function getWeather() {
 
 function renderWeather($weatherData) {
     echo "<br />------------------------------------------------<br />";
-    echo "TODAY’S WEATHER<br /><br />";
+    echo "WEATHER<br /><br />";
 
     if ($weatherData && isset($weatherData['properties']['periods'])) {
         $todaysWeather = $weatherData['properties']['periods'][0];
-            echo "Forecast: " . $todaysWeather['detailedForecast'];
+        echo $todaysWeather['name'] . ": " . $todaysWeather['detailedForecast'];
+
     } else {
         echo "No weather data available.";
     }
