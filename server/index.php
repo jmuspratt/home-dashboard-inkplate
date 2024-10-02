@@ -26,6 +26,14 @@ if ($lunchData) :
     renderLunch($lunchData);
 endif;
 
+
+// Calendar
+$events = getCalendar($keyFilePath, $calendarId);
+if ($events) :
+    renderCalendar($events);
+endif;
+
+
 // Allowances
 $willRecords = getAirtableRecords('Will Transactions', $airtableApiKey, $airtableBaseID);
 $elizaRecords = getAirtableRecords('Eliza Transactions', $airtableApiKey, $airtableBaseID);
@@ -33,11 +41,6 @@ if ($willRecords && $elizaRecords) :
     renderAllowances($willRecords, $elizaRecords);
 endif;
 
-// Calendar
-$events = getCalendar($keyFilePath, $calendarId);
-if ($events) :
-    renderCalendar($events);
-endif;
 
 // Footer
 echo "<br />(Updated " .  date('l, F j') . " at " . date('g:i a') . ")";

@@ -41,7 +41,7 @@ function getWeather() {
 
 function renderWeather($weatherData) {
     echo "<br />------------------------------------------------<br />";
-    echo "TODAY’s WEATHER<br /><br />";
+    echo "TODAY’S WEATHER<br /><br />";
 
     if ($weatherData && isset($weatherData['properties']['periods'])) {
         $todaysWeather = $weatherData['properties']['periods'][0];
