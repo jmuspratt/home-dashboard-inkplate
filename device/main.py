@@ -234,10 +234,13 @@ def fetch(url, filepath):
 
 
   # Wake and init SD card
-    display = Inkplate(Inkplate.INKPLATE_1BIT)
+    display = Inkplate(Inkplate.INKPLATE_2BIT)
     display.begin()
     display.initSDCard()
-    time.sleep(5)
+    time.sleep(1)
+    display.SDCardWake()
+
+
     print("SD Card initialized, file list:")
     print(os.listdir("/sd"))
 
@@ -271,28 +274,36 @@ def fetch(url, filepath):
 
     print(f"Image saved to {filepath}")
 
+    display.SDCardSleep()
+
+
 def render(filepath):
     print("Rendering image")
 
-    display = Inkplate(Inkplate.INKPLATE_1BIT)
+    display = Inkplate(Inkplate.INKPLATE_2BIT)
     display.begin()
     display.initSDCard()
-    time.sleep(5)
+    time.sleep(1)
+    display.SDCardWake()
+
+
+  # Open the file text.txt in read only mode and print it's contents
+    print('sd card listing')
+    print(os.listdir("/sd"))
 
     try:
-        with open(filepath, "rb") as f:
-            data = f.read(10)
-            print("First 10 bytes of the image file:", data)
-            print("Drawing image...")
-            display.drawImageFile(0, 0, filepath)
+            # with open(filepath, "rb") as f:
+            # data = f.read(10)
+            # print("First 10 bytes of the image file:", data)
+        print("Drawing image...")
+        display.drawImageFile(0, 0, filepath)
     except Exception as e:
         print("Failed to read image file:", e)
 
-    # You can turn off the power to the SD card to save power
-    # display.SDCardSleep()
-
     # Show the image from the buffer
     display.display()
+
+    display.SDCardSleep()
 
 
 def fetchAndRender(url, filepath):
@@ -311,9 +322,10 @@ def loop(timer):
 if __name__ == "__main__":
 
     # renderImage("/sd/1.bmp")
-    url = "https://dashboard.jamesmuspratt.com/img/remote2.bmp"
-    filepath = "/sd/remote2.bmp"
-    fetchAndRender(url, filepath)
+    url = "https://dashboard.jamesmuspratt.com/img/remote3.bmp"
+    filepath = "/sd/remote3.bmp"
+    # fetchAndRender(url, filepath)
+    render("/sd/1.bmp")
 
     # # 300000ms = 5 minutes
     # loopPeriod = 300000
