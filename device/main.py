@@ -159,6 +159,7 @@ def fetch(url, filepath):
 
     do_connect()
 
+
     af = socket.AF_INET
     proto = socket.IPPROTO_TCP
     socktype = socket.SOCK_STREAM
@@ -230,6 +231,17 @@ def fetch(url, filepath):
         s.close()
         raise ValueError("Failed to download image, server responded with an error.")
 
+
+
+  # Wake and init SD card
+    display = Inkplate(Inkplate.INKPLATE_1BIT)
+    display.begin()
+    display.initSDCard()
+    time.sleep(5)
+    print("SD Card initialized, file list:")
+    print(os.listdir("/sd"))
+
+
     # Open the file to write the BMP image
     try:
         with open(filepath, 'wb') as f:
@@ -259,36 +271,33 @@ def fetch(url, filepath):
 
     print(f"Image saved to {filepath}")
 
-def render(file_path):
+def render(filepath):
     print("Rendering image")
 
     display = Inkplate(Inkplate.INKPLATE_1BIT)
     display.begin()
-    # display.display()
     display.initSDCard()
-    display.SDCardWake()
-    # Wait 5 seconds to ensure initialization
     time.sleep(5)
 
     try:
-        with open(file_path, "rb") as f:
+        with open(filepath, "rb") as f:
             data = f.read(10)
             print("First 10 bytes of the image file:", data)
             print("Drawing image...")
-            display.drawImageFile(0, 0, file_path)
+            display.drawImageFile(0, 0, filepath)
     except Exception as e:
         print("Failed to read image file:", e)
 
     # You can turn off the power to the SD card to save power
-    display.SDCardSleep()
+    # display.SDCardSleep()
 
     # Show the image from the buffer
     display.display()
 
 
-def fetchAndRender(url, file_path):
-    fetch(url, file_path) 
-    render(file_path)
+def fetchAndRender(url, filepath):
+    fetch(url, filepath) 
+    render(filepath)
  
 
 
@@ -303,8 +312,8 @@ if __name__ == "__main__":
 
     # renderImage("/sd/1.bmp")
     url = "https://dashboard.jamesmuspratt.com/img/remote2.bmp"
-    file_path = "/sd/remote2.bmp"
-    fetchAndRender(url, file_path)
+    filepath = "/sd/remote2.bmp"
+    fetchAndRender(url, filepath)
 
     # # 300000ms = 5 minutes
     # loopPeriod = 300000
