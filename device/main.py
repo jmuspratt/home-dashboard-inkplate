@@ -8,7 +8,9 @@ import network
 import os
 import time
 import urequests
-
+import usocket as socket
+import ussl as ssl
+ 
 from time import sleep
 from soldered_inkplate10 import Inkplate
 
@@ -141,102 +143,141 @@ def http_get(url):
 
 
 
+def listFiles(): 
+        # This prints all the files on card
+    print(os.listdir(""))
 
-def fetchAndDisplayImage():
+   # Open the file text.txt in read only mode and print it's contents
+    f = open("sd/file.txt", "r")
+    print(f.read()) 
+    f.close() 
 
-    print("fetchAndDisplayImage()")
 
-    # First, connect
+
+def fetch(url, filepath):    
+    print("Fetching image from URL:", url)
+
     do_connect()
 
-    # Set up Inkplate (use Inkplate.INKPLATE_1BIT, _2BIT, or _3BIT depending on what you need)
+    af = socket.AF_INET
+    proto = socket.IPPROTO_TCP
+    socktype = socket.SOCK_STREAM
+    socket_timeout = 10  # seconds
+
+    # Split the URL to obtain the scheme, host, and path
+    scheme, _, host, path = url.split("/", 3)
+
+    if scheme == 'https:':
+        port = 443
+    elif scheme == 'http:':
+        port = 80
+    else:
+        raise ValueError(f"Unsupported URI scheme ({scheme}) in URL ({url}), only http/https supported")
+
+    # Resolve host and connect
+    for addressinfo in socket.getaddrinfo(host, port, af, socktype, proto):
+        af, socktype, proto, _, sockaddr = addressinfo
+        try:
+            s = socket.socket(af, socktype, proto)
+            s.settimeout(socket_timeout)
+            s.connect(sockaddr)
+            break
+        except OSError:
+            s = None
+            continue
+
+    if s is None:
+        raise ConnectionError("Failed to connect to the server.")
+
+    # Wrap the socket in SSL if needed
+    if scheme == "https:":
+        try:
+            s = ssl.wrap_socket(s, server_hostname=host)
+        except:
+            raise ConnectionError("Failed to wrap socket in SSL.")
+        
+    # Send the HTTP GET request
+    buffer = f"GET /{path} HTTP/1.0\r\n"
+    buffer += f"Host: {host}\r\n"
+    buffer += "User-Agent: micropython/1.2.0 inkplate esp32\r\n"
+    buffer += "Accept: */*\r\n"  # Allow any content
+    buffer += "Connection: close\r\n"  # Ensure server closes connection after response
+    buffer += "\r\n"
+
+    try:
+        s.write(bytes(buffer, "utf8"))
+    except:
+        raise ConnectionError("Failed to send GET request.")
+
+    # Read the response headers
+    headers = b""
+    while True:
+        data = s.read(1)
+        if not data or headers.endswith(b"\r\n\r\n"):
+            break
+        headers += data
+
+    # Split headers from the body and process Content-Length if available
+    headers_str = headers.decode('utf8')
+    header_lines = headers_str.split("\r\n")
+    content_length = None
+    for line in header_lines:
+        if line.lower().startswith("content-length:"):
+            content_length = int(line.split(":")[1].strip())
+
+    # Check for HTTP status code 200 (OK)
+    if "200 OK" not in headers_str:
+        s.close()
+        raise ValueError("Failed to download image, server responded with an error.")
+
+    # Open the file to write the BMP image
+    try:
+        with open(filepath, 'wb') as f:
+            if content_length:
+                # If Content-Length is provided, read exactly that many bytes
+                bytes_remaining = content_length
+                while bytes_remaining > 0:
+                    chunk_size = min(512, bytes_remaining)
+                    data = s.read(chunk_size)
+                    if not data:
+                        break
+                    f.write(data)
+                    bytes_remaining -= len(data)
+            else:
+                # If Content-Length is not provided, read until the connection is closed
+                while True:
+                    data = s.read(512)  # Read in chunks
+                    if not data:
+                        break
+                    f.write(data)
+    except OSError as e:
+        print("Failed to write to SD card:", e)
+        return
+
+    # Close the socket
+    s.close()
+
+    print(f"Image saved to {filepath}")
+
+def render(file_path):
+    print("Rendering image")
+
     display = Inkplate(Inkplate.INKPLATE_1BIT)
     display.begin()
-    display.clearDisplay()
-    display.initSDCard()
-    display.SDCardWake()
-    time.sleep(5)
-
-
-    # URL of the image to download (must be a BMP file)
-    image_url = "http://dashboard.jamesmuspratt.com/img/picture.bmp"
-    sd_card_path = "/sd/picture.bmp"
-    
-
-    # Download the image and save it to SD card
-    response = urequests.get(image_url)
-    print("response status was: ", response.status_code)
-
-    # if response.status_code == 200:
-        # with open(sd_card_path, 'wb') as f:
-            # f.write(response.content)
-    # response.close()
-    # display.drawImageFile(0, 0, sd_card_path, False)
-
-    display.drawImageFile(0, 0, sd_card_path)
-    display.display()
-    display.SDCardSleep()
-
-
-
-
-def fetchAndDisplay():
-   # Example placeholder for Inkplate task logic
-    print("Executing Inkplate-related task")
-
-    # First, connect
-    do_connect()
-
-    # Do a GET request to the micropython test page
-    # If you were to do a GET request to a different page/resource, change the URL here
-    response = http_get(config.ENDPOINT)
-
-    # Create and initialize our Inkplate object in 1-bit mode``
-    display = Inkplate(Inkplate.INKPLATE_1BIT)
-    display.begin()
-
-    #rotation int 0 = none 1 = 90deg clockwise rotation, 2 = 180deg, 3 = 270deg
-    display.setRotation(3)
-    # Set text size to double from the original size, so we can see the text better
-    display.setTextSize(2)
-
-    # Print response line by line
-    cnt = 0
-    for x in response.split("<br />"):
-        display.printText(
-            10, 20 + cnt, x.upper()
-        )  # Default font has only upper case letters
-        cnt += 20
-
-
-    # Get the battery reading as a string
-    battery = str(display.readBattery())
-    # Print the text at coordinates 100,100 (from the upper left corner)
-    display.printText(100, 900, "Battery voltage: " + battery + "V")
-
-    # Display image from buffer in full refresh
-    display.display()
-    
-
-
-def renderImage(local_path):
-    display = Inkplate(Inkplate.INKPLATE_1BIT)
-    display.begin()
-
+    # display.display()
     display.initSDCard()
     display.SDCardWake()
     # Wait 5 seconds to ensure initialization
     time.sleep(5)
 
-#     # This prints all the files on card
-#     print(os.listdir(""))
-
-#    # Open the file text.txt in read only mode and print it's contents
-#     f = open("sd/file.txt", "r")
-#     print(f.read()) 
-#     f.close() 
-
-    display.drawImageFile(0, 0, local_path)
+    try:
+        with open(file_path, "rb") as f:
+            data = f.read(10)
+            print("First 10 bytes of the image file:", data)
+            print("Drawing image...")
+            display.drawImageFile(0, 0, file_path)
+    except Exception as e:
+        print("Failed to read image file:", e)
 
     # You can turn off the power to the SD card to save power
     display.SDCardSleep()
@@ -245,19 +286,25 @@ def renderImage(local_path):
     display.display()
 
 
+def fetchAndRender(url, file_path):
+    fetch(url, file_path) 
+    render(file_path)
+ 
+
 
 def loop(timer):
    print("Running loop function...")
-   renderImage() 
-
-
+   fetchAndRender()
 
 
 
 # Main function
 if __name__ == "__main__":
 
-    renderImage("sd/diamonds.bmp")
+    # renderImage("/sd/1.bmp")
+    url = "https://dashboard.jamesmuspratt.com/img/remote2.bmp"
+    file_path = "/sd/remote2.bmp"
+    fetchAndRender(url, file_path)
 
     # # 300000ms = 5 minutes
     # loopPeriod = 300000
