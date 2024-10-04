@@ -5,8 +5,13 @@
 import config
 import machine
 import network
+import os
 import time
+import urequests
+
+from time import sleep
 from soldered_inkplate10 import Inkplate
+
 
 # Enter your WiFi credentials here
 ssid = config.WIFI_SSID
@@ -115,9 +120,62 @@ def http_get(url):
     return body
 
 
-def loop(timer):
-   print("Running main task...")
-   fetchAndDisplay() 
+
+
+# def listSDCardFiles():
+    # display = Inkplate(Inkplate.INKPLATE_1BIT)
+    # display.begin()
+    # display.clearDisplay()
+    # display.display()
+
+    # display.initSDCard()
+    # display.SDCardWake()
+
+    # time.sleep(3)
+
+    # print(os.listdir("/sd"))
+    
+    # display.SDCardSleep()
+    # display.display()
+
+
+
+
+
+def fetchAndDisplayImage():
+
+    print("fetchAndDisplayImage()")
+
+    # First, connect
+    do_connect()
+
+    # Set up Inkplate (use Inkplate.INKPLATE_1BIT, _2BIT, or _3BIT depending on what you need)
+    display = Inkplate(Inkplate.INKPLATE_1BIT)
+    display.begin()
+    display.clearDisplay()
+    display.initSDCard()
+    display.SDCardWake()
+    time.sleep(5)
+
+
+    # URL of the image to download (must be a BMP file)
+    image_url = "http://dashboard.jamesmuspratt.com/img/picture.bmp"
+    sd_card_path = "/sd/picture.bmp"
+    
+
+    # Download the image and save it to SD card
+    response = urequests.get(image_url)
+    print("response status was: ", response.status_code)
+
+    # if response.status_code == 200:
+        # with open(sd_card_path, 'wb') as f:
+            # f.write(response.content)
+    # response.close()
+    # display.drawImageFile(0, 0, sd_card_path, False)
+
+    display.drawImageFile(0, 0, sd_card_path)
+    display.display()
+    display.SDCardSleep()
 
 
 
@@ -133,7 +191,7 @@ def fetchAndDisplay():
     # If you were to do a GET request to a different page/resource, change the URL here
     response = http_get(config.ENDPOINT)
 
-    # Create and initialize our Inkplate object in 1-bit mode
+    # Create and initialize our Inkplate object in 1-bit mode``
     display = Inkplate(Inkplate.INKPLATE_1BIT)
     display.begin()
 
@@ -150,20 +208,65 @@ def fetchAndDisplay():
         )  # Default font has only upper case letters
         cnt += 20
 
+
+    # Get the battery reading as a string
+    battery = str(display.readBattery())
+    # Print the text at coordinates 100,100 (from the upper left corner)
+    display.printText(100, 900, "Battery voltage: " + battery + "V")
+
     # Display image from buffer in full refresh
     display.display()
+    
+
+
+def renderImage(local_path):
+    display = Inkplate(Inkplate.INKPLATE_1BIT)
+    display.begin()
+
+    display.initSDCard()
+    display.SDCardWake()
+    # Wait 5 seconds to ensure initialization
+    time.sleep(5)
+
+#     # This prints all the files on card
+#     print(os.listdir(""))
+
+#    # Open the file text.txt in read only mode and print it's contents
+#     f = open("sd/file.txt", "r")
+#     print(f.read()) 
+#     f.close() 
+
+    display.drawImageFile(0, 0, local_path)
+
+    # You can turn off the power to the SD card to save power
+    display.SDCardSleep()
+
+    # Show the image from the buffer
+    display.display()
+
+
+
+def loop(timer):
+   print("Running loop function...")
+   renderImage() 
+
+
 
 
 
 # Main function
 if __name__ == "__main__":
 
-    # Create and start the timer
-    timer = machine.Timer(-1)  # Use virtual timer (-1 means not using hardware-specific timers)
-    timer.init(period=60000, mode=machine.Timer.PERIODIC, callback=loop)
+    renderImage("sd/diamonds.bmp")
 
-    # Keep the script running indefinitely
-    while True:
-        time.sleep(1)  # A small sleep to keep the main thread alive
+    # # 300000ms = 5 minutes
+    # loopPeriod = 300000
+
+    # timer = machine.Timer(-1)  # Use virtual timer (-1 means not using hardware-specific timers)f
+    # timer.init(period=loopPeriod, mode=machine.Timer.PERIODIC, callback=loop)
+
+    # # Keep the script running indefinitely
+    # while True:
+    #     time.sleep(1)  # A small sleep to keep the main thread alive
 
     
