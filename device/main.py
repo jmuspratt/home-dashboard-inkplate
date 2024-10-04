@@ -282,6 +282,9 @@ def render(filepath):
 
     display = Inkplate(Inkplate.INKPLATE_2BIT)
     display.begin()
+    display.clearDisplay()
+    display.display()
+
     display.initSDCard()
     time.sleep(1)
     display.SDCardWake()
@@ -292,16 +295,16 @@ def render(filepath):
     print(os.listdir("/sd"))
 
     try:
-            # with open(filepath, "rb") as f:
-            # data = f.read(10)
-            # print("First 10 bytes of the image file:", data)
+        # with open(filepath, "rb") as f:
+        # data = f.read(10)
+        # print("First 10 bytes of the image file:", data)
         print("Drawing image...")
         display.drawImageFile(0, 0, filepath)
+        # Show the image from the buffer
+        display.display()
     except Exception as e:
         print("Failed to read image file:", e)
 
-    # Show the image from the buffer
-    display.display()
 
     display.SDCardSleep()
 
@@ -313,8 +316,10 @@ def fetchAndRender(url, filepath):
 
 
 def loop(timer):
-   print("Running loop function...")
-   fetchAndRender()
+    print("Running loop function...")
+    url = "https://dashboard.jamesmuspratt.com/img/remote3.bmp"
+    filepath = "/sd/remote3.bmp"
+    fetchAndRender(url, filepath)
 
 
 
@@ -324,8 +329,11 @@ if __name__ == "__main__":
     # renderImage("/sd/1.bmp")
     url = "https://dashboard.jamesmuspratt.com/img/remote3.bmp"
     filepath = "/sd/remote3.bmp"
-    # fetchAndRender(url, filepath)
-    render("/sd/1.bmp")
+    fetchAndRender(url, filepath)
+
+
+    
+    # render("/sd/1.bmp")
 
     # # 300000ms = 5 minutes
     # loopPeriod = 300000
