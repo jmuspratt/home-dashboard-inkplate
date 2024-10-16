@@ -147,10 +147,9 @@ def listFiles():
         # This prints all the files on card
     print(os.listdir(""))
 
-   # Open the file text.txt in read only mode and print it's contents
-    f = open("sd/file.txt", "r")
-    print(f.read()) 
-    f.close() 
+    # f = open("sd/file.txt", "r")
+    # print(f.read()) 
+    # f.close() 
 
 
 
@@ -263,7 +262,7 @@ def fetch(url, filepath):
 
     print(f"Image saved to {filepath}")
 
-    display.SDCardSleep()
+    # display.SDCardSleep()
 
 
 def render(filepath):
@@ -280,10 +279,7 @@ def render(filepath):
     except Exception as e:
         print("Failed to read image file:", e)
 
-
-
-
-    display.SDCardSleep()
+    # display.SDCardSleep()
 
 
 def fetchAndRender(url, filepath):
@@ -293,8 +289,8 @@ def fetchAndRender(url, filepath):
 
 def loop(timer):
     print("Running loop function...")
-    url = "https://dashboard.jamesmuspratt.com/img/remote4.bmp"
-    filepath = "/sd/remote4.bmp"
+    url = "https://dashboard.jamesmuspratt.com/img/diamonds.bmp"
+    filepath = "/sd/diamonds.bmp"
     fetchAndRender(url, filepath)
 
 
@@ -302,8 +298,8 @@ def loop(timer):
 # Main function
 if __name__ == "__main__":
 
-    url = "https://dashboard.jamesmuspratt.com/img/remote4.bmp"
-    filepath = "/sd/remote4.bmp"
+    url = "https://dashboard.jamesmuspratt.com/img/diamonds.bmp"
+    filepath = "/sd/diamonds.bmp"
 
     # Global initialization
     display = Inkplate(Inkplate.INKPLATE_1BIT)
@@ -311,15 +307,20 @@ if __name__ == "__main__":
     display.display()
 
     # Initialize SD card once
-    if not display.initSDCard():
-        raise OSError("Failed to initialize SD card")
-    time.sleep(1)
-    display.SDCardWake()
+    # if not display.initSDCard():
+    #     raise OSError("Failed to initialize SD card")
+    # time.sleep(1)
+    # display.SDCardWake()
+
+    display.initSDCard()
+    time.sleep(2)
     
-    # Run fetch and render
+    display.SDCardWake()
+
+    time.sleep(2)
+
     fetchAndRender(url, filepath)
 
-    display.SDCardSleep()
 
 
     # # 300000ms = 5 minutes
