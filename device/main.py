@@ -274,7 +274,7 @@ def render(filepath):
     try:
         print('SD card listing:', os.listdir("/sd"))
         print("Drawing image...")
-        display.drawImageFile(0, 0, filepath)
+        display.drawImageFile(0, 0, filepath, False)
         display.display()
     except Exception as e:
         print("Failed to read image file:", e)
@@ -289,8 +289,8 @@ def fetchAndRender(url, filepath):
 
 def loop(timer):
     print("Running loop function...")
-    url = "https://dashboard.jamesmuspratt.com/img/diamonds.bmp"
-    filepath = "/sd/diamonds.bmp"
+    url = "https://dashboard.jamesmuspratt.com/img/1.bmp"
+    filepath = "/sd/1.bmp"
     fetchAndRender(url, filepath)
 
 
@@ -298,26 +298,27 @@ def loop(timer):
 # Main function
 if __name__ == "__main__":
 
-    url = "https://dashboard.jamesmuspratt.com/img/diamonds.bmp"
-    filepath = "/sd/diamonds.bmp"
+    url = "https://dashboard.jamesmuspratt.com/img/1.bmp"
+    filepath = "/sd/1.bmp"
 
     # Global initialization
     display = Inkplate(Inkplate.INKPLATE_1BIT)
     display.begin()
+
+    # Clear
+    display.clearDisplay()
     display.display()
 
     # Initialize SD card once
-    # if not display.initSDCard():
-    #     raise OSError("Failed to initialize SD card")
-    # time.sleep(1)
-    # display.SDCardWake()
-
-    display.initSDCard()
-    time.sleep(2)
-    
+    if not display.initSDCard():
+        raise OSError("Failed to initialize SD card")
+    time.sleep(1)
     display.SDCardWake()
 
-    time.sleep(2)
+    # display.initSDCard()
+    # time.sleep(2)
+    # display.SDCardWake()
+    # time.sleep(2)
 
     fetchAndRender(url, filepath)
 
