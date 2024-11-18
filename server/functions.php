@@ -59,7 +59,8 @@ function renderWeather($weatherData) {
     } else {
         $output .= "No weather data available.";
     }
-    echo wrapText($output . "<br />");
+    $output .= "<br />";
+    echo wrapText($output);
 }
 
 

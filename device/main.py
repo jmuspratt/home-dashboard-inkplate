@@ -152,7 +152,7 @@ def fetchAndDisplay():
 
     # Output battery level at bottom right of screen
     battery = str(display.readBattery())
-    display.printText(590, 1150, "Battery: " + battery + " V")
+    display.printText(585, 1170, "Battery: " + battery + " V")
     
     # Display image from buffer in full refresh
     display.display()
