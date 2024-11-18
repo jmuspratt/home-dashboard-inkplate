@@ -150,8 +150,13 @@ def fetchAndDisplay():
         )  # Default font has only upper case letters
         cnt += 20
 
+    # Output battery level at bottom right of screen
+    battery = str(display.readBattery())
+    display.printText(10, 200, "Battery voltage: " + battery + "V")
+    
     # Display image from buffer in full refresh
     display.display()
+
 
 
 
