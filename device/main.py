@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
     # Create and start the timer
     timer = machine.Timer(-1)  # Use virtual timer (-1 means not using hardware-specific timers)
-    timer.init(period=loopFrequency, mode=machine.Timer.PERIODIC, callback=loop)
+    timer.init(period=loopTime, mode=machine.Timer.PERIODIC, callback=loop)
 
     # Keep the script running indefinitely
     while True:
