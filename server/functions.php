@@ -6,6 +6,15 @@ use Google\Service\Calendar;
 use TANIOS\Airtable\Airtable;
 
 
+function wrapText($string) {
+    $lineLength = 60;
+    if (strlen($string) > $lineLength) {
+        $string = wordwrap($string, $lineLength, "<br />");
+    } 
+    return $string;
+}
+
+
 function getWeather() {
     // Arlington is 42.41194,-71.14738
     // Here's what you get for https://api.weather.gov/points/42.41194,-71.14738
@@ -40,16 +49,17 @@ function getWeather() {
 }
 
 function renderWeather($weatherData) {
-    echo "<br />------------------------------------------------<br />";
-    echo "WEATHER<br /><br />";
+    $output = "<br />------------------------------------------------<br />";
+    $output .= "WEATHER<br /><br />";
 
     if ($weatherData && isset($weatherData['properties']['periods'])) {
         $todaysWeather = $weatherData['properties']['periods'][0];
-        echo $todaysWeather['name'] . ": " . $todaysWeather['detailedForecast'];
+        $output .= $todaysWeather['name'] . ": " . $todaysWeather['detailedForecast'];
 
     } else {
-        echo "No weather data available.";
+        $output .= "No weather data available.";
     }
+    echo wrapText($output . "<br />");
 }
 
 
@@ -116,11 +126,12 @@ function getCalendar($keyFilePath, $calendarId) {
 
 
 function renderCalendar($events) {
+    $output = "";
     if (count($events->getItems()) == 0) :
-        echo "No upcoming events found.\n";
+        $output .= "No upcoming events found.\n";
     else :
-        echo "<br />------------------------------------------------<br />";
-        echo ("CALENDAR<br />");
+        $output .= "<br />------------------------------------------------<br />";
+        $output .= ("CALENDAR<br />");
         // Track the current day to determine when to add a new heading
         $currentDay = null;
 
@@ -144,29 +155,30 @@ function renderCalendar($events) {
 
                 // If this event's date is different from the current day, insert a new heading
                 if ($currentDay !== $eventDay) :
-                    echo "<br />$eventDay<br />";
+                    $output .= "<br />$eventDay<br />";
                     $currentDay = $eventDay;
                 endif;
 
                 // Print the event with formatted times
                 $timeSpan = "{$startTime} - {$endTime}";
-                echo "{$timeSpan}: {$summary}<br />";
+                $output .= "{$timeSpan}: {$summary}<br />";
             else :
                 // Handle the case where dateTime is not set (e.g., all-day events)
                 if (isset($event->start->date)) :
                     $eventDay = (new DateTime($event->start->date))->format('l, F j');
                     
                     if ($currentDay !== $eventDay) :
-                        echo "<br />$eventDay<br />";
+                        $output .= "<br />$eventDay<br />";
                         $currentDay = $eventDay;
                     endif;
 
                     $timeSpan = "All day";
-                    echo "{$timeSpan}: {$summary}<br />";
+                    $output .= "{$timeSpan}: {$summary}<br />";
                 endif;
             endif;
         endforeach;
     endif;
+    echo wrapText($output);
 }
 
 function renderLunch($lunch) {
@@ -186,10 +198,11 @@ function renderLunch($lunch) {
 
     // If a lunch was found, display it
     if ($todaysLunch) {
-        echo "<br />------------------------------------------------<br />";
-        echo ("LUNCH<br /><br />");
-        echo "Today's lunch is: " . $todaysLunch;
-        echo "<br />";
+        $output = "<br />------------------------------------------------<br />";
+        $output .= ("LUNCH<br /><br />");
+        $output .= "Today's lunch is: " . $todaysLunch;
+        $output .= "<br />";
+        echo wrapText($output);
     }
 }
 
@@ -231,11 +244,12 @@ function renderAllowances($willRecords, $elizaRecords) {
 
     // }
 
-    echo "<br />------------------------------------------------<br />";
-    echo ("ACCOUNT BALANCES<br /><br />");
-    echo ("Will: $" . number_format($willBalanceUSD, 2)) . "<br />";
-    echo ("Eliza: $" . number_format($elizaBalanceUSD, 2));
-    echo "<br />";
+    $output = "<br />------------------------------------------------<br />";
+    $output .= ("ACCOUNT BALANCES<br /><br />");
+    $output .= ("Will: $" . number_format($willBalanceUSD, 2)) . "<br />";
+    $output .= ("Eliza: $" . number_format($elizaBalanceUSD, 2));
+    $output .= "<br />";
+    echo wrapText($output);
 }
 
 
