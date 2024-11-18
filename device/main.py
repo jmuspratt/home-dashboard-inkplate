@@ -152,7 +152,7 @@ def fetchAndDisplay():
 
     # Output battery level at bottom right of screen
     battery = str(display.readBattery())
-    display.printText(600, 1160, + battery + " V")
+    display.printText(600, 1160, battery + " V")
     
     # Display image from buffer in full refresh
     display.display()
@@ -163,7 +163,7 @@ def fetchAndDisplay():
 # Main function
 if __name__ == "__main__":
 
-    loopFrequency = 10 # in minutes
+    loopFrequency = 5 # in minutes
     loopTime = loopFrequency * 60000 # convert to milliseconds
 
     # Create and start the timer
