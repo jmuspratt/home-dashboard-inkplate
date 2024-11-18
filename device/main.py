@@ -138,21 +138,21 @@ def fetchAndDisplay():
     display.begin()
 
     #rotation int 0 = none 1 = 90deg clockwise rotation, 2 = 180deg, 3 = 270deg
-    display.setRotation(3)
+    display.setRotation(1)
     # Set text size to double from the original size, so we can see the text better
     display.setTextSize(2)
 
     # Print response line by line
-    cnt = 0
+    cnt = 30
     for x in response.split("<br />"):
         display.printText(
-            10, 20 + cnt, x.upper()
+            40, 20 + cnt, x.upper()
         )  # Default font has only upper case letters
         cnt += 20
 
     # Output battery level at bottom right of screen
     battery = str(display.readBattery())
-    display.printText(585, 1170, "Battery: " + battery + " V")
+    display.printText(600, 1160, + battery + " V")
     
     # Display image from buffer in full refresh
     display.display()
