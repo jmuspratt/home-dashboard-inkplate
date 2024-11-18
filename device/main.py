@@ -158,9 +158,12 @@ def fetchAndDisplay():
 # Main function
 if __name__ == "__main__":
 
+    loopFrequency = 10 # in minutes
+    loopTime = loopFrequency * 60000 # convert to milliseconds
+
     # Create and start the timer
     timer = machine.Timer(-1)  # Use virtual timer (-1 means not using hardware-specific timers)
-    timer.init(period=60000, mode=machine.Timer.PERIODIC, callback=loop)
+    timer.init(period=loopFrequency, mode=machine.Timer.PERIODIC, callback=loop)
 
     # Keep the script running indefinitely
     while True:
