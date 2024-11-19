@@ -49,8 +49,8 @@ function getWeather() {
 }
 
 function renderWeather($weatherData) {
-    $output = "<br />------------------------------------------------<br />";
-    $output .= "WEATHER<br /><br />";
+    $output = "<br />-----------------------------------------------------------<br />";
+    $output .= "Weather<br /><br />";
 
     if ($weatherData && isset($weatherData['properties']['periods'])) {
         $todaysWeather = $weatherData['properties']['periods'][0];
@@ -131,8 +131,8 @@ function renderCalendar($events) {
     if (count($events->getItems()) == 0) :
         $output .= "No upcoming events found.\n";
     else :
-        $output .= "<br />------------------------------------------------<br />";
-        $output .= ("CALENDAR<br />");
+        $output .= "<br />-----------------------------------------------------------<br />";
+        $output .= ("Calendar<br />");
         // Track the current day to determine when to add a new heading
         $currentDay = null;
 
@@ -146,13 +146,8 @@ function renderCalendar($events) {
 
                 // Format date and times
                 $eventDay = $startDateTime->format('l, F j'); // e.g., "Monday, September 30"
-                $startTime = $startDateTime->format('g:i'); // e.g., "4:00" (full minutes without AM/PM initially)
+                $startTime = $startDateTime->format('g:i a'); // e.g., "4:00 pm" 
                 $endTime = $endDateTime->format('g:i a'); // e.g., "5:15 pm"
-
-                // Add AM/PM only for events that span noon
-                if ($startDateTime->format('a') != $endDateTime->format('a')) :
-                    $startTime .= ' ' . $startDateTime->format('a'); // Append am/pm if spans noon
-                endif;
 
                 // If this event's date is different from the current day, insert a new heading
                 if ($currentDay !== $eventDay) :
@@ -199,8 +194,8 @@ function renderLunch($lunch) {
 
     // If a lunch was found, display it
     if ($todaysLunch) {
-        $output = "<br />------------------------------------------------<br />";
-        $output .= ("LUNCH<br /><br />");
+        $output = "<br />-----------------------------------------------------------<br />";
+        $output .= ("Lunch<br /><br />");
         $output .= "Today's lunch is: " . $todaysLunch;
         $output .= "<br />";
         echo wrapText($output);
@@ -245,8 +240,8 @@ function renderAllowances($willRecords, $elizaRecords) {
 
     // }
 
-    $output = "<br />------------------------------------------------<br />";
-    $output .= ("ACCOUNT BALANCES<br /><br />");
+    $output = "<br />-----------------------------------------------------------<br />";
+    $output .= ("Allowance Balances<br /><br />");
     $output .= ("Will: $" . number_format($willBalanceUSD, 2)) . "<br />";
     $output .= ("Eliza: $" . number_format($elizaBalanceUSD, 2));
     $output .= "<br />";
