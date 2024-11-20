@@ -7,7 +7,7 @@ use TANIOS\Airtable\Airtable;
 
 
 function wrapText($string) {
-    $lineLength = 65;
+    $lineLength = 63;
     if (strlen($string) > $lineLength) {
         $string = wordwrap($string, $lineLength, "<br />");
     } 
@@ -49,7 +49,7 @@ function getWeather() {
 }
 
 function renderWeather($weatherData) {
-    $output = "<br />----------------------------------------------------------------<br />";
+    $output = "<br />--------------------------------------------------------------<br />";
     $output .= "Weather<br /><br />";
 
     if ($weatherData && isset($weatherData['properties']['periods'])) {
@@ -131,7 +131,7 @@ function renderCalendar($events) {
     if (count($events->getItems()) == 0) :
         $output .= "No upcoming events found.\n";
     else :
-        $output .= "<br />----------------------------------------------------------------<br />";
+        $output .= "<br />--------------------------------------------------------------<br />";
         $output .= ("Calendar<br />");
         // Track the current day to determine when to add a new heading
         $currentDay = null;
@@ -194,7 +194,7 @@ function renderLunch($lunch) {
 
     // If a lunch was found, display it
     if ($todaysLunch) {
-        $output = "<br />----------------------------------------------------------------<br />";
+        $output = "<br />--------------------------------------------------------------<br />";
         $output .= ("Lunch<br /><br />");
         $output .= "Today's lunch is: " . $todaysLunch;
         $output .= "<br />";
@@ -240,7 +240,7 @@ function renderAllowances($willRecords, $elizaRecords) {
 
     // }
 
-    $output = "<br />----------------------------------------------------------------<br />";
+    $output = "<br />--------------------------------------------------------------<br />";
     $output .= ("Allowance Balances<br /><br />");
     $output .= ("Will: $" . number_format($willBalanceUSD, 2)) . "<br />";
     $output .= ("Eliza: $" . number_format($elizaBalanceUSD, 2));
