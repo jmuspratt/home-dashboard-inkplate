@@ -168,7 +168,7 @@ function renderCalendar($events) {
                         $currentDay = $eventDay;
                     endif;
 
-                    $timeSpan = "All day";
+                    $timeSpan = "All day: "; // pad the string to match other time spans
                     $output .= "{$timeSpan}: {$summary}<br />";
                 endif;
             endif;
