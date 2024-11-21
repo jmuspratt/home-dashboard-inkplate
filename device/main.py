@@ -21,7 +21,8 @@ password = config.WIFI_PASSWORD
 
 
 def loop(timer):
-    # increment loop count
+    # increment loop count (which is global)
+    global loopCount
     loopCount += 1
     print("Running main task...")
     print("Loop count is " + str(loopCount))
