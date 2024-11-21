@@ -28,10 +28,10 @@ def loop(timer):
     print("Loop count is " + str(loopCount))
     display = Inkplate(Inkplate.INKPLATE_1BIT)
     display.begin()
+    display.setRotation(1)
     display.setTextSize(2)
     display.printText(600, 1160, str(loopCount))
     display.display()
-
 
 
 # Main function
