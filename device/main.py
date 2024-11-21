@@ -8,6 +8,9 @@ import network
 import time
 from soldered_inkplate10 import Inkplate
 
+global loopCount 
+loopCount = 0
+
 # Enter your WiFi credentials here
 ssid = config.WIFI_SSID
 password = config.WIFI_PASSWORD
@@ -150,9 +153,17 @@ def fetchAndDisplay():
         )  # Default font has only upper case letters
         cnt += 20
 
+
+
     # Output battery level at bottom right of screen
     battery = str(display.readBattery())
-    display.printText(600, 1160, battery + " V")
+    display.printText(620, 1140, battery + " V")
+
+    global loopCount
+    loopCount +=1 
+    loopCountStr = str(loopCount)
+    display.printText(620, 1160, "Refresh count: " + loopCountStr)
+
     
     # Display image from buffer in full refresh
     display.display()
