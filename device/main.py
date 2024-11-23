@@ -163,7 +163,7 @@ if __name__ == "__main__":
     except Exception as e:
         log_to_file(f"Failed to initialize SD card: {e}")
 
-    loopFrequency = 5  # in minutes
+    loopFrequency = 30  # in minutes
     loopTime = loopFrequency * 60000  # convert to milliseconds
 
     timer = machine.Timer(-1)  # Use virtual timer
