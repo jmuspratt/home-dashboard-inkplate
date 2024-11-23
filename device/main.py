@@ -136,7 +136,7 @@ def fetchAndDisplay():
             display.printText(40, 20 + cnt, x.upper())
             cnt += 20
 
-        # outpu message with format "3.36V (29%)"
+        # output battery level with format "4.0V (74%)"
         batteryVoltage = str(display.readBattery())
         batteryLevel = get_battery_level(batteryVoltage)
         batteryMessage = f"{batteryVoltage}V ({batteryLevel})"
