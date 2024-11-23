@@ -107,6 +107,14 @@ def log_memory():
     free_memory = gc.mem_free()
     log_to_file(f"Free memory: {free_memory} bytes")
 
+
+def get_battery_level(voltageString):
+    batterMax = 4.33
+    batteryMin = 3.08
+
+    pctRemaining = (float(voltageString) - batteryMin) / (batterMax - batteryMin) * 100
+    return f"{pctRemaining:.2f}%"
+
 # Main task loop
 def fetchAndDisplay():
     global loopCount
@@ -128,10 +136,15 @@ def fetchAndDisplay():
             display.printText(40, 20 + cnt, x.upper())
             cnt += 20
 
-        battery = str(display.readBattery())
-        display.printText(620, 1140, battery + " V")
-        display.printText(620, 1160, f"Refresh count: {loopCount}")
+        # outpu message with format "3.36V (29%)"
+        batteryVoltage = str(display.readBattery())
+        batteryLevel = get_battery_level(batteryVoltage)
+        batteryMessage = f"{batteryVoltage}V ({batteryLevel})"
+        display.printText(580, 1140, batteryMessage)
+
+        display.printText(580, 1160, f"Refresh count: {loopCount}")
         display.display()
+        
         log_to_file(f"Display updated successfully.")
     except Exception as e:
         log_to_file(f"Error in fetchAndDisplay: {e}")
