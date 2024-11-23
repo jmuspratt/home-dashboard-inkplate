@@ -117,7 +117,8 @@ def get_battery_level(voltageString):
     batteryMin = 3.08 # could be 3.0
 
     pctRemaining = (float(voltageString) - batteryMin) / (batterMax - batteryMin) * 100
-    return f"{pctRemaining:.2f}%"
+    # round to nearest percentage
+    return f"{int(pctRemaining)}%"
 
 # Main task loop
 def fetchAndDisplay():
