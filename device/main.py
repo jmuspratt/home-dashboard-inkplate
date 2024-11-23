@@ -113,7 +113,7 @@ def log_memory():
 
 
 def get_battery_level(voltageString):
-    batterMax = 4.33 # could be 4.2 
+    batterMax = 4.35 # could be 4.2 
     batteryMin = 3.08 # could be 3.0
 
     pctRemaining = (float(voltageString) - batteryMin) / (batterMax - batteryMin) * 100
