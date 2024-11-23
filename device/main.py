@@ -15,6 +15,10 @@ password = config.WIFI_PASSWORD
 
 # Logging function for SD card
 def log_to_file(message):
+
+    # Disable logging to SD card
+    return
+
     try:
         with open('/sd/log.txt', 'a') as f:
             timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
