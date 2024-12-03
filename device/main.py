@@ -41,7 +41,7 @@ def do_connect():
     print(f"Network config: {ip_info}")
     log_to_file(f"Network config: {ip_info}")
 
-# Function that puts the ESP32 into deepsleep mode
+# Function that puts the ESP32 into deepsleep mode (10 mins)
 def sleepnow(ms=600000):
     log_to_file(f"Going to sleep for {ms} ms")
     machine.deepsleep(ms)
@@ -144,13 +144,21 @@ def fetchAndDisplay():
         # output battery level with format "4.0V (74%)"
         batteryVoltage = str(display.readBattery())
         batteryLevel = get_battery_level(batteryVoltage)
-        batteryMessage = f"{batteryVoltage}V ({batteryLevel})"
+        # batteryMessage = f"{batteryVoltage}V ({batteryLevel})"
+        batteryMessage = f"{batteryLevel}"
         display.printText(580, 1140, batteryMessage)
 
-        display.printText(580, 1160, f"Refresh count: {loopCount}")
+        # display.printText(580, 1160, f"Refresh count: {loopCount}")
         display.display()
         
         log_to_file(f"Display updated successfully.")
+
+
+        # Sleep
+        sleepMinutes = 25  # in minutes
+        sleepTime = sleepMinutes * 60000  # convert to milliseconds
+        sleepnow(sleepTime)
+
     except Exception as e:
         log_to_file(f"Error in fetchAndDisplay: {e}")
 
