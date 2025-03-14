@@ -6,6 +6,12 @@ import time
 import gc
 from soldered_inkplate10 import Inkplate
 
+# Configuration variables
+SLEEP_MINUTES = 25  # Sleep time in minutes
+SLEEP_MS = SLEEP_MINUTES * 60 * 1000  # Convert to milliseconds
+WIFI_TIMEOUT = 15  # WiFi connection timeout in seconds
+CPU_FREQUENCY = 80000000  # 80 MHz - lower frequency to save power
+
 # Use RTC memory to store loop count across deep sleep cycles
 rtc = machine.RTC()
 try:
@@ -32,11 +38,10 @@ def do_connect():
         sta_if.connect(ssid, password)
         
         # Add timeout to prevent battery drain if WiFi is unavailable
-        timeout = 15  # seconds
         start_time = time.time()
         
         while not sta_if.isconnected():
-            if time.time() - start_time > timeout:
+            if time.time() - start_time > WIFI_TIMEOUT:
                 print("WiFi connection timeout")
                 return False
             time.sleep(1)
@@ -46,7 +51,7 @@ def do_connect():
     return True
 
 # Function that puts the ESP32 into deepsleep mode
-def sleepnow(ms=1500000):  # 25 minutes default
+def sleepnow(ms=SLEEP_MS):  # Use default from config variables
     global loopCount
     
     # Store loop count in RTC memory to persist through deep sleep
@@ -56,9 +61,9 @@ def sleepnow(ms=1500000):  # 25 minutes default
     network.WLAN(network.STA_IF).active(False)
     
     # Reduce CPU frequency before sleep
-    machine.freq(80000000)  # 80 MHz
+    machine.freq(CPU_FREQUENCY)
     
-    print(f"Going to sleep for {ms} ms")
+    print(f"Going to sleep for {ms} ms ({ms/60000:.1f} minutes)")
     machine.deepsleep(ms)
 
 # HTTP GET function with optimized connection handling
@@ -152,7 +157,7 @@ def main():
     print(f"Starting loop {loopCount}")
 
     # Set CPU to lower frequency to save power
-    machine.freq(80000000)  # 80 MHz
+    machine.freq(CPU_FREQUENCY)
     
     # Force garbage collection before main task
     gc.collect()
@@ -195,10 +200,8 @@ def main():
         
         print("Display updated successfully.")
 
-        # Sleep
-        sleepMinutes = 25  # in minutes
-        sleepTime = sleepMinutes * 60000  # convert to milliseconds
-        sleepnow(sleepTime)
+        # Go to sleep using the configured sleep time
+        sleepnow()
 
     except Exception as e:
         print(f"Error in main function: {e}")
