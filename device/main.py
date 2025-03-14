@@ -31,8 +31,12 @@ def do_connect():
     if not sta_if.isconnected():
         print("Connecting to network...")
         
-        # Set WiFi to power saving mode
-        sta_if.config(pm=1)
+        # Try to set WiFi to power saving mode if supported
+        try:
+            sta_if.config(pm=1)
+            print("WiFi power saving mode enabled")
+        except Exception as e:
+            print(f"WiFi power saving not supported: {e}")
         
         sta_if.active(True)
         sta_if.connect(ssid, password)
