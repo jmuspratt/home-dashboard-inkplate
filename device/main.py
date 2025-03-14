@@ -6,47 +6,62 @@ import time
 import gc
 from soldered_inkplate10 import Inkplate
 
-global loopCount
-loopCount = 0
+# Use RTC memory to store loop count across deep sleep cycles
+rtc = machine.RTC()
+try:
+    loopCount = rtc.memory()[0] if rtc.memory() else 0
+except:
+    loopCount = 0
 
 # Enter your WiFi credentials here
 ssid = config.WIFI_SSID
 password = config.WIFI_PASSWORD
 
-# Logging function for SD card
-def log_to_file(message):
-
-    # Disable logging to SD card
-    return
-
-    try:
-        with open('/sd/log.txt', 'a') as f:
-            timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-            f.write(f"[{timestamp}] {message}\n")
-    except Exception as e:
-        print(f"Failed to write log to SD card: {e}")
-
-# Function which connects to WiFi
+# Function which connects to WiFi with timeout and power management
 def do_connect():
     import network
     sta_if = network.WLAN(network.STA_IF)
+    
     if not sta_if.isconnected():
         print("Connecting to network...")
-        log_to_file("Connecting to network...")
+        
+        # Set WiFi to power saving mode
+        sta_if.config(pm=1)
+        
         sta_if.active(True)
         sta_if.connect(ssid, password)
+        
+        # Add timeout to prevent battery drain if WiFi is unavailable
+        timeout = 15  # seconds
+        start_time = time.time()
+        
         while not sta_if.isconnected():
-            pass
+            if time.time() - start_time > timeout:
+                print("WiFi connection timeout")
+                return False
+            time.sleep(1)
+            
     ip_info = sta_if.ifconfig()
     print(f"Network config: {ip_info}")
-    log_to_file(f"Network config: {ip_info}")
+    return True
 
-# Function that puts the ESP32 into deepsleep mode (10 mins)
-def sleepnow(ms=600000):
-    log_to_file(f"Going to sleep for {ms} ms")
+# Function that puts the ESP32 into deepsleep mode
+def sleepnow(ms=1500000):  # 25 minutes default
+    global loopCount
+    
+    # Store loop count in RTC memory to persist through deep sleep
+    rtc.memory(bytearray([loopCount]))
+    
+    # Disable WiFi before sleep to save power
+    network.WLAN(network.STA_IF).active(False)
+    
+    # Reduce CPU frequency before sleep
+    machine.freq(80000000)  # 80 MHz
+    
+    print(f"Going to sleep for {ms} ms")
     machine.deepsleep(ms)
 
-# HTTP GET function
+# HTTP GET function with optimized connection handling
 def http_get(url):
     import usocket as socket
     import ussl as ssl
@@ -63,9 +78,10 @@ def http_get(url):
     elif scheme == 'http:':
         port = 80
     else:
-        log_to_file(f"Unsupported URI scheme: {scheme}")
+        print(f"Unsupported URI scheme: {scheme}")
         raise ValueError(f"Unsupported URI scheme: {scheme}")
 
+    s = None
     try:
         for addressinfo in socket.getaddrinfo(host, port, af, socktype, proto):
             af, socktype, proto, cname, sockaddr = addressinfo
@@ -76,61 +92,88 @@ def http_get(url):
                 s = ssl.wrap_socket(s, server_hostname=host)
             break
     except Exception as e:
-        log_to_file(f"HTTP connection error: {e}")
+        print(f"HTTP connection error: {e}")
+        if s:
+            s.close()
         sleepnow()
 
     buffer = f"GET /{path} HTTP/1.0\r\nHost: {host}\r\nUser-Agent: micropython/1.2.0\r\n\r\n"
     try:
         s.write(buffer.encode('utf-8'))
     except Exception as e:
-        log_to_file(f"HTTP request send error: {e}")
+        print(f"HTTP request send error: {e}")
+        s.close()
         sleepnow()
 
-    while True:
-        try:
-            data = s.read(1000)
-        except Exception as e:
-            log_to_file(f"HTTP response read error: {e}")
-            sleepnow()
-        if data:
-            res += data.decode('utf-8')
-        else:
-            break
+    # More efficient data reading
+    chunks = []
+    try:
+        while True:
+            data = s.read(1024)  # Read larger chunks
+            if not data:
+                break
+            chunks.append(data)
+    except Exception as e:
+        print(f"HTTP response read error: {e}")
+        s.close()
+        sleepnow()
+    
     s.close()
+    
+    # Join all chunks at once instead of concatenating in the loop
+    response = b''.join(chunks).decode('utf-8')
 
     try:
-        _, body = res.split("\r\n\r\n", 1)  # Split headers and body
-        log_to_file(f"HTTP GET success: {url}")
+        _, body = response.split("\r\n\r\n", 1)  # Split headers and body
+        print(f"HTTP GET success: {url}")
         return body
     except Exception as e:
-        log_to_file(f"HTTP response parse error: {e}")
+        print(f"HTTP response parse error: {e}")
         raise
-
-# Log memory status
-def log_memory():
-    free_memory = gc.mem_free()
-    log_to_file(f"Free memory: {free_memory} bytes")
-
 
 def get_battery_level(voltageString):
     batterMax = 4.40 
     batteryMin = 3.40 
 
-    pctRemaining = (float(voltageString) - batteryMin) / (batterMax - batteryMin) * 100
-    # round to nearest percentage
-    return f"{int(pctRemaining)}%"
+    try:
+        voltage = float(voltageString)
+        pctRemaining = (voltage - batteryMin) / (batterMax - batteryMin) * 100
+        # Cap between 0-100%
+        pctRemaining = max(0, min(100, pctRemaining))
+        # round to nearest percentage
+        return f"{int(pctRemaining)}%"
+    except:
+        return "??%"
 
-# Main task loop
-def fetchAndDisplay():
+# Main function
+def main():
     global loopCount
     loopCount += 1
-    log_to_file(f"Starting loop {loopCount}")
-    log_memory()
+    print(f"Starting loop {loopCount}")
 
+    # Set CPU to lower frequency to save power
+    machine.freq(80000000)  # 80 MHz
+    
+    # Force garbage collection before main task
+    gc.collect()
+    
     try:
-        do_connect()
+        # Only initialize SD card if absolutely needed
+        # display = Inkplate()
+        # display.initSDCard()
+        
+        # Connect to WiFi - return to sleep if connection fails
+        if not do_connect():
+            sleepnow()
+            return
+            
+        # Fetch data
         response = http_get(config.ENDPOINT)
+        
+        # Turn off WiFi immediately after data is fetched
+        network.WLAN(network.STA_IF).active(False)
 
+        # Initialize display (using 1-bit mode for power saving)
         display = Inkplate(Inkplate.INKPLATE_1BIT)
         display.begin()
         display.setRotation(1)
@@ -141,18 +184,16 @@ def fetchAndDisplay():
             display.printText(40, 20 + cnt, x.upper())
             cnt += 20
 
-        # output battery level with format "4.0V (74%)"
+        # Output battery level
         batteryVoltage = str(display.readBattery())
         batteryLevel = get_battery_level(batteryVoltage)
-        # batteryMessage = f"{batteryVoltage}V ({batteryLevel})"
         batteryMessage = f"{batteryLevel}"
         display.printText(580, 1140, batteryMessage)
 
-        # display.printText(580, 1160, f"Refresh count: {loopCount}")
+        # Update display
         display.display()
         
-        log_to_file(f"Display updated successfully.")
-
+        print("Display updated successfully.")
 
         # Sleep
         sleepMinutes = 25  # in minutes
@@ -160,23 +201,14 @@ def fetchAndDisplay():
         sleepnow(sleepTime)
 
     except Exception as e:
-        log_to_file(f"Error in fetchAndDisplay: {e}")
+        print(f"Error in main function: {e}")
+        # Sleep anyway on error
+        sleepnow()
 
-# Main function
+# Entry point
 if __name__ == "__main__":
-    try:
-        # Initialize SD card
-        display = Inkplate()
-        display.initSDCard()
-        log_to_file("SD card initialized successfully.")
-    except Exception as e:
-        log_to_file(f"Failed to initialize SD card: {e}")
-
-    loopFrequency = 30  # in minutes
-    loopTime = loopFrequency * 60000  # convert to milliseconds
-
-    timer = machine.Timer(-1)  # Use virtual timer
-    timer.init(period=loopTime, mode=machine.Timer.PERIODIC, callback=lambda t: fetchAndDisplay())
-
-    while True:
-        time.sleep(1)
+    # Run the main function once, then sleep
+    main()
+    
+    # If execution somehow continues past main(), go to sleep
+    sleepnow()
