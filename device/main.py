@@ -7,10 +7,11 @@ import gc
 from soldered_inkplate10 import Inkplate
 
 # Configuration variables
-SLEEP_MINUTES = 25  # Sleep time in minutes
-SLEEP_MS = SLEEP_MINUTES * 60 * 1000  # Convert to milliseconds
+SLEEP_MINUTES = .5  # Sleep time in minutes
+SLEEP_MS = int(SLEEP_MINUTES * 60 * 1000)  # Convert to milliseconds (as integer)
 WIFI_TIMEOUT = 15  # WiFi connection timeout in seconds
 CPU_FREQUENCY = 80000000  # 80 MHz - lower frequency to save power
+DEBUG = True  # Set to True only during development
 
 # Use RTC memory to store loop count across deep sleep cycles
 rtc = machine.RTC()
@@ -23,20 +24,25 @@ except:
 ssid = config.WIFI_SSID
 password = config.WIFI_PASSWORD
 
-# Function which connects to WiFi with timeout and power management
+# Debug print function - only prints if DEBUG is True
+def debug_print(message):
+    if DEBUG:
+        print(message)
+
+# Function which connects to WiFi with timeout
 def do_connect():
     import network
     sta_if = network.WLAN(network.STA_IF)
     
     if not sta_if.isconnected():
-        print("Connecting to network...")
+        debug_print("Connecting to network...")
         
         # Try to set WiFi to power saving mode if supported
         try:
             sta_if.config(pm=1)
-            print("WiFi power saving mode enabled")
+            debug_print("WiFi power saving mode enabled")
         except Exception as e:
-            print(f"WiFi power saving not supported: {e}")
+            debug_print(f"WiFi power saving not supported: {e}")
         
         sta_if.active(True)
         sta_if.connect(ssid, password)
@@ -46,17 +52,22 @@ def do_connect():
         
         while not sta_if.isconnected():
             if time.time() - start_time > WIFI_TIMEOUT:
-                print("WiFi connection timeout")
+                debug_print("WiFi connection timeout")
                 return False
             time.sleep(1)
             
-    ip_info = sta_if.ifconfig()
-    print(f"Network config: {ip_info}")
     return True
 
 # Function that puts the ESP32 into deepsleep mode
-def sleepnow(ms=SLEEP_MS):  # Use default from config variables
+def sleepnow(ms=None):  # Use default from config variables
     global loopCount
+    
+    # If no sleep time provided, use the default
+    if ms is None:
+        ms = SLEEP_MS
+    
+    # Ensure ms is an integer
+    ms = int(ms)
     
     # Store loop count in RTC memory to persist through deep sleep
     rtc.memory(bytearray([loopCount]))
@@ -67,7 +78,11 @@ def sleepnow(ms=SLEEP_MS):  # Use default from config variables
     # Reduce CPU frequency before sleep
     machine.freq(CPU_FREQUENCY)
     
-    print(f"Going to sleep for {ms} ms ({ms/60000:.1f} minutes)")
+    # Debug output
+    if DEBUG:
+        print(f"Going to sleep for {ms} ms ({ms/60000:.1f} minutes)")
+    
+    # Go to sleep
     machine.deepsleep(ms)
 
 # HTTP GET function with optimized connection handling
@@ -79,7 +94,6 @@ def http_get(url):
     socktype = socket.SOCK_STREAM
     socket_timeout = 10  # seconds
 
-    res = ""
     scheme, _, host, path = url.split("/", 3)
     
     if scheme == 'https:':
@@ -87,7 +101,6 @@ def http_get(url):
     elif scheme == 'http:':
         port = 80
     else:
-        print(f"Unsupported URI scheme: {scheme}")
         raise ValueError(f"Unsupported URI scheme: {scheme}")
 
     s = None
@@ -101,7 +114,8 @@ def http_get(url):
                 s = ssl.wrap_socket(s, server_hostname=host)
             break
     except Exception as e:
-        print(f"HTTP connection error: {e}")
+        if DEBUG:
+            print(f"HTTP connection error: {e}")
         if s:
             s.close()
         sleepnow()
@@ -110,7 +124,8 @@ def http_get(url):
     try:
         s.write(buffer.encode('utf-8'))
     except Exception as e:
-        print(f"HTTP request send error: {e}")
+        if DEBUG:
+            print(f"HTTP request send error: {e}")
         s.close()
         sleepnow()
 
@@ -123,7 +138,8 @@ def http_get(url):
                 break
             chunks.append(data)
     except Exception as e:
-        print(f"HTTP response read error: {e}")
+        if DEBUG:
+            print(f"HTTP response read error: {e}")
         s.close()
         sleepnow()
     
@@ -134,10 +150,11 @@ def http_get(url):
 
     try:
         _, body = response.split("\r\n\r\n", 1)  # Split headers and body
-        print(f"HTTP GET success: {url}")
+        debug_print(f"HTTP GET success")
         return body
     except Exception as e:
-        print(f"HTTP response parse error: {e}")
+        if DEBUG:
+            print(f"HTTP response parse error: {e}")
         raise
 
 def get_battery_level(voltageString):
@@ -158,8 +175,8 @@ def get_battery_level(voltageString):
 def main():
     global loopCount
     loopCount += 1
-    print(f"Starting loop {loopCount}")
-
+    debug_print(f"Starting loop {loopCount}")
+    
     # Set CPU to lower frequency to save power
     machine.freq(CPU_FREQUENCY)
     
@@ -167,10 +184,6 @@ def main():
     gc.collect()
     
     try:
-        # Only initialize SD card if absolutely needed
-        # display = Inkplate()
-        # display.initSDCard()
-        
         # Connect to WiFi - return to sleep if connection fails
         if not do_connect():
             sleepnow()
@@ -201,14 +214,14 @@ def main():
 
         # Update display
         display.display()
+        debug_print("Display updated successfully")
         
-        print("Display updated successfully.")
-
         # Go to sleep using the configured sleep time
         sleepnow()
 
     except Exception as e:
-        print(f"Error in main function: {e}")
+        if DEBUG:
+            print(f"Error in main function: {e}")
         # Sleep anyway on error
         sleepnow()
 
