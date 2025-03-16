@@ -8,7 +8,7 @@ from soldered_inkplate10 import Inkplate
 
 # Configuration variables
 SLEEP_MINUTES = .5  # Sleep time in minutes
-SLEEP_MS = int(SLEEP_MINUTES * 60 * 1000)  # Convert to milliseconds (as integer)
+SLEEP_MS = int(SLEEP_MINUTES * 60 * 1000)  # Explicit integer conversion
 WIFI_TIMEOUT = 15  # WiFi connection timeout in seconds
 CPU_FREQUENCY = 80000000  # 80 MHz - lower frequency to save power
 DEBUG = True  # Set to True only during development
@@ -16,7 +16,7 @@ DEBUG = True  # Set to True only during development
 # Use RTC memory to store loop count across deep sleep cycles
 rtc = machine.RTC()
 try:
-    loopCount = rtc.memory()[0] if rtc.memory() else 0
+    loopCount = int.from_bytes(rtc.memory(), 'little') if rtc.memory() else 0
 except:
     loopCount = 0
 
@@ -59,32 +59,25 @@ def do_connect():
     return True
 
 # Function that puts the ESP32 into deepsleep mode
-def sleepnow(ms=None):  # Use default from config variables
+def sleepnow(ms=None):
     global loopCount
-    
-    # If no sleep time provided, use the default
-    if ms is None:
-        ms = SLEEP_MS
-    
-    # Ensure ms is an integer
-    ms = int(ms)
-    
-    # Store loop count in RTC memory to persist through deep sleep
-    rtc.memory(bytearray([loopCount]))
-    
-    # Disable WiFi before sleep to save power
-    network.WLAN(network.STA_IF).active(False)
-    
-    # Reduce CPU frequency before sleep
-    machine.freq(CPU_FREQUENCY)
-    
-    # Debug output
-    if DEBUG:
-        print(f"Going to sleep for {ms} ms ({ms/60000:.1f} minutes)")
-    
-    # Go to sleep
-    machine.deepsleep(ms)
 
+    if ms is None:
+        ms = SLEEP_MS  # This may still be a float
+
+    # Force conversion to integer
+    ms = int(ms)
+
+    debug_print(f"Type of ms: {type(ms)} - Value: {ms}")
+
+    rtc.memory(loopCount.to_bytes(4, 'little'))
+    
+    network.WLAN(network.STA_IF).active(False)
+    machine.freq(CPU_FREQUENCY)
+
+    debug_print(f"Going to sleep for {ms} ms ({ms / 60000:.1f} minutes)")
+    
+    machine.deepsleep(ms)  # Ensure this receives an integer
 # HTTP GET function with optimized connection handling
 def http_get(url):
     import usocket as socket
