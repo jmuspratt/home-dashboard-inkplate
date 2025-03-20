@@ -7,7 +7,7 @@ import gc
 from soldered_inkplate10 import Inkplate
 
 # Configuration variables
-SLEEP_MINUTES = 60  # Sleep time in minutes
+SLEEP_MINUTES = 5  # Sleep time in minutes
 SLEEP_MS = int(SLEEP_MINUTES * 60 * 1000)  # Explicit integer conversion
 WIFI_TIMEOUT = 15  # WiFi connection timeout in seconds
 CPU_FREQUENCY = 80000000  # 80 MHz - lower frequency to save power
@@ -127,46 +127,47 @@ def http_get(url):
     except Exception as e:
         debug_print(f"HTTP response parse error: {e}")
         return ""
-
+    
 def main():
     global loopCount
-    loopCount += 1
-    debug_print(f"Starting loop {loopCount}")
-    machine.freq(CPU_FREQUENCY)
-    gc.collect()
-    
-    try:
-        if not do_connect():
-            sleepnow()
-            return
+    while True:  # Keeps running indefinitely
+        loopCount += 1
+        debug_print(f"Starting loop {loopCount}")
         
-        response = http_get(config.ENDPOINT)
-        debug_print(f"Response from HTTP request: {response[:200]}")
+        machine.freq(CPU_FREQUENCY)
+        gc.collect()
         
-        network.WLAN(network.STA_IF).active(False)
-        display = Inkplate(Inkplate.INKPLATE_1BIT)
-        display.begin()
-        display.setRotation(1)
-        display.setTextSize(2)
+        try:
+            if not do_connect():
+                continue  # Skip to the next iteration if WiFi fails
+                
+            response = http_get(config.ENDPOINT)
+            debug_print(f"Response from HTTP request: {response[:200]}")
+            
+            network.WLAN(network.STA_IF).active(False)
+            display = Inkplate(Inkplate.INKPLATE_1BIT)
+            display.begin()
+            display.setRotation(1)
+            display.setTextSize(2)
 
-        cnt = 30
-        for x in response.split("<br />"):
-            display.printText(40, 20 + cnt, x.upper())
-            cnt += 20
+            cnt = 30
+            for x in response.split("<br />"):
+                display.printText(40, 20 + cnt, x.upper())
+                cnt += 20
 
-        batteryVoltage = str(display.readBattery())
-        batteryMessage = f"{batteryVoltage}V"
-        display.printText(580, 1140, batteryMessage)
+            batteryVoltage = str(display.readBattery())
+            batteryMessage = f"{batteryVoltage}V"
+            display.printText(580, 1140, batteryMessage)
 
-        debug_print("Updating display now...")
-        display.display()
-        debug_print("Display update complete.")
+            debug_print("Updating display now...")
+            display.display()
+            debug_print("Display update complete.")
 
-        sleepnow()
-    except Exception as e:
-        debug_print(f"Error in main function: {e}")
-        sleepnow()
+            time.sleep(SLEEP_MS / 1000)  # Simulates periodic execution without deep sleep
 
+        except Exception as e:
+            debug_print(f"Error in main loop: {e}")
+
+# ✅ Ensure `main()` runs when `main.py` starts
 if __name__ == "__main__":
     main()
-    sleepnow()
