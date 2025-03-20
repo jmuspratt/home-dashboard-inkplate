@@ -7,7 +7,7 @@ import gc
 from soldered_inkplate10 import Inkplate
 
 # Configuration variables
-SLEEP_MINUTES = 5  # Sleep time in minutes
+SLEEP_MINUTES = 60  # Sleep time in minutes
 SLEEP_MS = int(SLEEP_MINUTES * 60 * 1000)  # Explicit integer conversion
 WIFI_TIMEOUT = 15  # WiFi connection timeout in seconds
 CPU_FREQUENCY = 80000000  # 80 MHz - lower frequency to save power
