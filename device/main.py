@@ -6,12 +6,14 @@ import time
 import gc
 from soldered_inkplate10 import Inkplate
 
+print("Booting device...")
+
 # Configuration variables
 SLEEP_MINUTES = 60  # Sleep time in minutes
 SLEEP_MS = int(SLEEP_MINUTES * 60 * 1000)  # Explicit integer conversion
 WIFI_TIMEOUT = 15  # WiFi connection timeout in seconds
 CPU_FREQUENCY = 80000000  # 80 MHz - lower frequency to save power
-DEBUG = False  # Set to True only during development
+DEBUG = True  # Set to True only during development
 
 # Use RTC memory to store loop count across deep sleep cycles
 rtc = machine.RTC()
@@ -58,16 +60,15 @@ def sleepnow(ms=None):
     global loopCount
     if ms is None:
         ms = SLEEP_MS
-    ms = int(ms)
-    
+    ms = int(round(ms))  # Safely convert any float to int
+
     debug_print(f"Received ms in sleepnow(): {ms} (Type: {type(ms)})")
     debug_print(f"Going to sleep for {ms} ms ({ms / 60000:.1f} minutes)")
 
     rtc.memory(loopCount.to_bytes(4, 'little'))
     network.WLAN(network.STA_IF).active(False)
     machine.freq(CPU_FREQUENCY)
-    
-    # Commenting out deep sleep for debugging
+
     machine.deepsleep(ms)
 
 def http_get(url):
@@ -163,11 +164,9 @@ def main():
             display.display()
             debug_print("Display update complete.")
 
-            time.sleep(SLEEP_MS / 1000)  # Simulates periodic execution without deep sleep
+            sleepnow()
 
         except Exception as e:
             debug_print(f"Error in main loop: {e}")
 
-# ✅ Ensure `main()` runs when `main.py` starts
-if __name__ == "__main__":
-    main()
+main()
