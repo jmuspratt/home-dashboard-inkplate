@@ -13,37 +13,31 @@ loopCount = 0
 ssid = config.WIFI_SSID
 password = config.WIFI_PASSWORD
 
-# Logging function for SD card
-def log_to_file(message):
-    try:
-        timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        formatted_message = f"[{timestamp}] {message}"
-        print(formatted_message)  # Print to console
-        with open('/sd/log.txt', 'a') as f:
-            f.write(formatted_message + "\n")
-    except Exception as e:
-        error_msg = f"Failed to write log to SD card: {e}"
-        print(error_msg)  # Print error to console
+# Logging function
+def log(message):
+    timestamp = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*time.localtime())
+    formatted_message = f"[{timestamp}] {message}"
+    print(formatted_message)
 
 # Function which connects to WiFi
 def do_connect():
     import network
     sta_if = network.WLAN(network.STA_IF)
     if not sta_if.isconnected():
-        log_to_file("Starting WiFi connection...")
+        log("Starting WiFi connection...")
         sta_if.active(True)
         sta_if.connect(ssid, password)
         while not sta_if.isconnected():
             pass
     ip_info = sta_if.ifconfig()
-    log_to_file(f"WiFi connected successfully. Network config: {ip_info}")
+    log(f"WiFi connected successfully. Network config: {ip_info}")
 
 # Function that puts the ESP32 into deepsleep mode (10 mins)
 def sleepnow(ms=600000):
-    log_to_file(f"Preparing for deep sleep. Duration: {ms}ms ({ms/60000:.1f} minutes)")
-    log_to_file("Disabling WiFi before sleep...")
+    log(f"Preparing for deep sleep. Duration: {ms}ms ({ms/60000:.1f} minutes)")
+    log("Disabling WiFi before sleep...")
     network.WLAN(network.STA_IF).active(False)
-    log_to_file("Entering deep sleep...")
+    log("Entering deep sleep...")
     machine.deepsleep(ms)
 
 # HTTP GET function
@@ -63,11 +57,11 @@ def http_get(url):
     elif scheme == 'http:':
         port = 80
     else:
-        log_to_file(f"Unsupported URI scheme: {scheme}")
+        log(f"Unsupported URI scheme: {scheme}")
         raise ValueError(f"Unsupported URI scheme: {scheme}")
 
     try:
-        log_to_file(f"Attempting to connect to {host}:{port}...")
+        log(f"Attempting to connect to {host}:{port}...")
         for addressinfo in socket.getaddrinfo(host, port, af, socktype, proto):
             af, socktype, proto, cname, sockaddr = addressinfo
             s = socket.socket(af, socktype, proto)
@@ -77,22 +71,22 @@ def http_get(url):
                 s = ssl.wrap_socket(s, server_hostname=host)
             break
     except Exception as e:
-        log_to_file(f"HTTP connection error: {e}")
+        log(f"HTTP connection error: {e}")
         sleepnow()
 
     buffer = f"GET /{path} HTTP/1.0\r\nHost: {host}\r\nUser-Agent: micropython/1.2.0\r\n\r\n"
     try:
-        log_to_file("Sending HTTP request...")
+        log("Sending HTTP request...")
         s.write(buffer.encode('utf-8'))
     except Exception as e:
-        log_to_file(f"HTTP request send error: {e}")
+        log(f"HTTP request send error: {e}")
         sleepnow()
 
     while True:
         try:
             data = s.read(1000)
         except Exception as e:
-            log_to_file(f"HTTP response read error: {e}")
+            log(f"HTTP response read error: {e}")
             sleepnow()
         if data:
             res += data.decode('utf-8')
@@ -102,16 +96,16 @@ def http_get(url):
 
     try:
         _, body = res.split("\r\n\r\n", 1)  # Split headers and body
-        log_to_file(f"HTTP GET success: {url}")
+        log(f"HTTP GET success: {url}")
         return body
     except Exception as e:
-        log_to_file(f"HTTP response parse error: {e}")
+        log(f"HTTP response parse error: {e}")
         raise
 
 # Log memory status
 def log_memory():
     free_memory = gc.mem_free()
-    log_to_file(f"Free memory: {free_memory} bytes")
+    log(f"Free memory: {free_memory} bytes")
 
 def get_battery_level(voltageString):
     batterMax = 4.40 
@@ -125,23 +119,23 @@ def get_battery_level(voltageString):
 def fetchAndDisplay():
     global loopCount
     loopCount += 1
-    log_to_file(f"Starting loop {loopCount}")
+    log(f"Starting loop {loopCount}")
     log_memory()
 
     try:
-        log_to_file("Attempting WiFi connection...")
+        log("Attempting WiFi connection...")
         do_connect()
         
-        log_to_file("Fetching data from endpoint...")
+        log("Fetching data from endpoint...")
         response = http_get(config.ENDPOINT)
 
-        log_to_file("Initializing display...")
+        log("Initializing display...")
         display = Inkplate(Inkplate.INKPLATE_1BIT)
         display.begin()
         display.setRotation(1)
         display.setTextSize(2)
 
-        log_to_file("Updating display content...")
+        log("Updating display content...")
         cnt = 30
         for x in response.split("<br />"):
             display.printText(40, 20 + cnt, x.upper())
@@ -152,40 +146,40 @@ def fetchAndDisplay():
         batteryLevel = get_battery_level(batteryVoltage)
         batteryMessage = f"{batteryLevel}"
         display.printText(580, 1140, batteryMessage)
-        log_to_file(f"Battery level: {batteryMessage}")
+        log(f"Battery level: {batteryMessage}")
 
-        log_to_file("Updating display...")
+        log("Updating display...")
         display.display()
-        log_to_file("Display updated successfully")
+        log("Display updated successfully")
 
         # Sleep
         sleepMinutes = 25  # in minutes
         sleepTime = sleepMinutes * 60000  # convert to milliseconds
-        log_to_file(f"Preparing for sleep cycle. Next update in {sleepMinutes} minutes")
+        log(f"Preparing for sleep cycle. Next update in {sleepMinutes} minutes")
         sleepnow(sleepTime)
 
     except Exception as e:
-        log_to_file(f"Error in fetchAndDisplay: {e}")
+        log(f"Error in fetchAndDisplay: {e}")
         sleepnow()
 
 # Main function
 if __name__ == "__main__":
     try:
-        # Initialize SD card
-        log_to_file("Initializing SD card...")
+        # Initialize display
+        log("Initializing display...")
         display = Inkplate()
-        display.initSDCard()
-        log_to_file("SD card initialized successfully")
+        display.begin()
+        log("Display initialized successfully")
     except Exception as e:
-        log_to_file(f"Failed to initialize SD card: {e}")
+        log(f"Failed to initialize display: {e}")
 
     loopFrequency = 30  # in minutes
     loopTime = loopFrequency * 60000  # convert to milliseconds
 
-    log_to_file(f"Setting up timer with {loopFrequency} minute interval")
+    log(f"Setting up timer with {loopFrequency} minute interval")
     timer = machine.Timer(-1)  # Use virtual timer
     timer.init(period=loopTime, mode=machine.Timer.PERIODIC, callback=lambda t: fetchAndDisplay())
 
-    log_to_file("Entering main loop")
+    log("Entering main loop")
     while True:
         time.sleep(1)
