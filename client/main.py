@@ -4,7 +4,13 @@ import machine
 import network
 import time
 import gc
+import usocket as socket
+import ussl as ssl
 from soldered_inkplate10 import Inkplate
+
+# Configuration
+SLEEP_MINUTES = 5  # Time between updates in minutes
+SLEEP_MS = SLEEP_MINUTES * 60000  # Convert to milliseconds
 
 # Enter your WiFi credentials here
 ssid = config.WIFI_SSID
@@ -17,7 +23,6 @@ def log(message):
 
 # Function which connects to WiFi
 def do_connect():
-    import network
     sta_if = network.WLAN(network.STA_IF)
     if not sta_if.isconnected():
         log("Starting WiFi connection...")
@@ -28,8 +33,8 @@ def do_connect():
     ip_info = sta_if.ifconfig()
     log(f"WiFi connected successfully. Network config: {ip_info}")
 
-# Function that puts the ESP32 into deepsleep mode (10 mins)
-def sleepnow(ms=600000):
+# Function that puts the ESP32 into deepsleep mode
+def sleepnow(ms):
     log(f"Preparing for deep sleep. Duration: {ms}ms ({ms/60000:.1f} minutes)")
     log("Disabling WiFi before sleep...")
     network.WLAN(network.STA_IF).active(False)
@@ -38,8 +43,6 @@ def sleepnow(ms=600000):
 
 # HTTP GET function
 def http_get(url):
-    import usocket as socket
-    import ussl as ssl
     af = socket.AF_INET
     proto = socket.IPPROTO_TCP
     socktype = socket.SOCK_STREAM
@@ -68,7 +71,7 @@ def http_get(url):
             break
     except Exception as e:
         log(f"HTTP connection error: {e}")
-        sleepnow()
+        sleepnow(SLEEP_MS)
 
     buffer = f"GET /{path} HTTP/1.0\r\nHost: {host}\r\nUser-Agent: micropython/1.2.0\r\n\r\n"
     try:
@@ -76,14 +79,14 @@ def http_get(url):
         s.write(buffer.encode('utf-8'))
     except Exception as e:
         log(f"HTTP request send error: {e}")
-        sleepnow()
+        sleepnow(SLEEP_MS)
 
     while True:
         try:
             data = s.read(1000)
         except Exception as e:
             log(f"HTTP response read error: {e}")
-            sleepnow()
+            sleepnow(SLEEP_MS)
         if data:
             res += data.decode('utf-8')
         else:
@@ -104,11 +107,10 @@ def log_memory():
     log(f"Free memory: {free_memory} bytes")
 
 def get_battery_level(voltageString):
-    batterMax = 4.40 
+    batteryMax = 4.40 
     batteryMin = 3.40 
 
-    pctRemaining = (float(voltageString) - batteryMin) / (batterMax - batteryMin) * 100
-    # round to nearest percentage
+    pctRemaining = (float(voltageString) - batteryMin) / (batteryMax - batteryMin) * 100
     return f"{int(pctRemaining)}%"
 
 # Main task loop
@@ -116,44 +118,33 @@ def fetchAndDisplay():
     log_memory()
 
     try:
-        log("Attempting WiFi connection...")
         do_connect()
-        
-        log("Fetching data from endpoint...")
         response = http_get(config.ENDPOINT)
 
-        log("Initializing display...")
         display = Inkplate(Inkplate.INKPLATE_1BIT)
         display.begin()
         display.setRotation(1)
         display.setTextSize(2)
 
-        log("Updating display content...")
+        log("Updating display...")
         cnt = 30
         for x in response.split("<br />"):
             display.printText(40, 20 + cnt, x.upper())
             cnt += 20
 
-        # output battery level with format "4.0V (74%)"
         batteryVoltage = str(display.readBattery())
         batteryLevel = get_battery_level(batteryVoltage)
-        batteryMessage = f"{batteryLevel}"
-        display.printText(580, 1140, batteryMessage)
-        log(f"Battery level: {batteryMessage}")
+        display.printText(580, 1140, batteryLevel)
+        log(f"Battery level: {batteryLevel}")
 
-        log("Updating display...")
         display.display()
         log("Display updated successfully")
-
-        # Sleep
-        sleepMinutes = 25  # in minutes
-        sleepTime = sleepMinutes * 60000  # convert to milliseconds
-        log(f"Preparing for sleep cycle. Next update in {sleepMinutes} minutes")
-        sleepnow(sleepTime)
+        log(f"Preparing for sleep cycle. Next update in {SLEEP_MINUTES} minutes")
+        sleepnow(SLEEP_MS)
 
     except Exception as e:
         log(f"Error in fetchAndDisplay: {e}")
-        sleepnow()
+        sleepnow(SLEEP_MS)
 
 # Main function
 if __name__ == "__main__":
@@ -165,17 +156,5 @@ if __name__ == "__main__":
         log("Fresh boot")
 
     log("Starting application...")
-    
-    loopFrequency = 30  # in minutes
-    loopTime = loopFrequency * 60000  # convert to milliseconds
-
-    log(f"Setting up timer with {loopFrequency} minute interval")
-    timer = machine.Timer(-1)  # Use virtual timer
-    timer.init(period=loopTime, mode=machine.Timer.PERIODIC, callback=lambda t: fetchAndDisplay())
-
-    # Run the first update immediately
-    log("Running initial update...")
-    fetchAndDisplay()
-    
-    # No need for the while loop - the timer will handle periodic updates
-    log("Application started successfully") 
+    log(f"Update interval: {SLEEP_MINUTES} minutes")
+    fetchAndDisplay() 
