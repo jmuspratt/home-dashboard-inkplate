@@ -6,9 +6,6 @@ import time
 import gc
 from soldered_inkplate10 import Inkplate
 
-global loopCount
-loopCount = 0
-
 # Enter your WiFi credentials here
 ssid = config.WIFI_SSID
 password = config.WIFI_PASSWORD
@@ -116,9 +113,6 @@ def get_battery_level(voltageString):
 
 # Main task loop
 def fetchAndDisplay():
-    global loopCount
-    loopCount += 1
-    log(f"Starting loop {loopCount}")
     log_memory()
 
     try:
@@ -163,6 +157,13 @@ def fetchAndDisplay():
 
 # Main function
 if __name__ == "__main__":
+    # Check if this is a wake from deep sleep
+    wake_reason = machine.reset_cause()
+    if wake_reason == machine.DEEPSLEEP_RESET:
+        log("Woke up from deep sleep")
+    else:
+        log("Fresh boot")
+
     log("Starting application...")
     
     loopFrequency = 30  # in minutes
