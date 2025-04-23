@@ -9,7 +9,7 @@ import ussl as ssl
 from soldered_inkplate10 import Inkplate
 
 # Configuration
-SLEEP_MINUTES = 5  # Time between updates in minutes
+SLEEP_MINUTES = 60  # Time between updates in minutes
 SLEEP_MS = SLEEP_MINUTES * 60000  # Convert to milliseconds
 
 # Enter your WiFi credentials here
