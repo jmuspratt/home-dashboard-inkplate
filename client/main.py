@@ -16,8 +16,7 @@ password = config.WIFI_PASSWORD
 # Logging function
 def log(message):
     timestamp = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*time.localtime())
-    formatted_message = f"[{timestamp}] {message}"
-    print(formatted_message)
+    print(f"[{timestamp}] {message}")
 
 # Function which connects to WiFi
 def do_connect():
@@ -164,15 +163,8 @@ def fetchAndDisplay():
 
 # Main function
 if __name__ == "__main__":
-    try:
-        # Initialize display
-        log("Initializing display...")
-        display = Inkplate()
-        display.begin()
-        log("Display initialized successfully")
-    except Exception as e:
-        log(f"Failed to initialize display: {e}")
-
+    log("Starting application...")
+    
     loopFrequency = 30  # in minutes
     loopTime = loopFrequency * 60000  # convert to milliseconds
 
@@ -180,6 +172,9 @@ if __name__ == "__main__":
     timer = machine.Timer(-1)  # Use virtual timer
     timer.init(period=loopTime, mode=machine.Timer.PERIODIC, callback=lambda t: fetchAndDisplay())
 
-    log("Entering main loop")
-    while True:
-        time.sleep(1)
+    # Run the first update immediately
+    log("Running initial update...")
+    fetchAndDisplay()
+    
+    # No need for the while loop - the timer will handle periodic updates
+    log("Application started successfully") 
