@@ -7,10 +7,12 @@ import gc
 import usocket as socket
 import ussl as ssl
 from soldered_inkplate10 import Inkplate
+import ntptime
 
 # Configuration
-SLEEP_MINUTES = 60  # Time between updates in minutes
-SLEEP_MS = SLEEP_MINUTES * 60000  # Convert to milliseconds
+MILLISECONDS = 1000
+SECONDS_PER_HOUR = 3600
+SECONDS_PER_MINUTE = 60
 
 # Enter your WiFi credentials here
 ssid = config.WIFI_SSID
@@ -71,7 +73,7 @@ def http_get(url):
             break
     except Exception as e:
         log(f"HTTP connection error: {e}")
-        sleepnow(SLEEP_MS)
+        sleepnow(SECONDS_PER_HOUR * MILLISECONDS)
 
     buffer = f"GET /{path} HTTP/1.0\r\nHost: {host}\r\nUser-Agent: micropython/1.2.0\r\n\r\n"
     try:
@@ -79,14 +81,14 @@ def http_get(url):
         s.write(buffer.encode('utf-8'))
     except Exception as e:
         log(f"HTTP request send error: {e}")
-        sleepnow(SLEEP_MS)
+        sleepnow(SECONDS_PER_HOUR * MILLISECONDS)
 
     while True:
         try:
             data = s.read(1000)
         except Exception as e:
             log(f"HTTP response read error: {e}")
-            sleepnow(SLEEP_MS)
+            sleepnow(SECONDS_PER_HOUR * MILLISECONDS)
         if data:
             res += data.decode('utf-8')
         else:
@@ -113,12 +115,53 @@ def get_battery_level(voltageString):
     pctRemaining = (float(voltageString) - batteryMin) / (batteryMax - batteryMin) * 100
     return f"{int(pctRemaining)}%"
 
+# Function to get current hour in local timezone
+def get_local_hour():
+    # Get UTC time
+    try:
+        ntptime.settime()
+    except:
+        log("NTP sync failed, using system time")
+    
+    # Convert to local time (simple offset for EST/EDT, -4 or -5 hours)
+    # This is a simplified approach since MicroPython doesn't have full timezone support
+    utc_hour = time.localtime()[3]
+    # Boston is UTC-4 in summer (EDT) and UTC-5 in winter (EST)
+    # This is a simplified approach - you might want to add proper DST handling
+    local_hour = (utc_hour - 4) % 24  # Using EDT (UTC-4)
+    return local_hour
+
+# Calculate sleep duration based on current time
+def calculate_sleep_duration():
+    current_hour = get_local_hour()
+    current_minute = time.localtime()[4]
+    
+    if config.ACTIVE_START_HOUR <= current_hour < config.ACTIVE_END_HOUR:
+        # During active hours, sleep until the next hour
+        minutes_until_next_hour = 60 - current_minute
+        return minutes_until_next_hour * SECONDS_PER_MINUTE * MILLISECONDS
+    else:
+        # Outside active hours, sleep until ACTIVE_START_HOUR
+        if current_hour >= config.ACTIVE_END_HOUR:
+            # Sleep until tomorrow morning
+            hours_until_morning = (24 - current_hour + config.ACTIVE_START_HOUR) % 24
+        else:
+            # Sleep until this morning
+            hours_until_morning = config.ACTIVE_START_HOUR - current_hour
+            
+        return hours_until_morning * SECONDS_PER_HOUR * MILLISECONDS
+
 # Main task loop
 def fetchAndDisplay():
     log_memory()
 
     try:
         do_connect()
+        
+        # Get current hour to log scheduling info
+        current_hour = get_local_hour()
+        log(f"Current local hour: {current_hour}")
+        
         response = http_get(config.ENDPOINT)
 
         display = Inkplate(Inkplate.INKPLATE_1BIT)
@@ -139,12 +182,17 @@ def fetchAndDisplay():
 
         display.display()
         log("Display updated successfully")
-        log(f"Preparing for sleep cycle. Next update in {SLEEP_MINUTES} minutes")
-        sleepnow(SLEEP_MS)
+        
+        # Calculate next sleep duration
+        sleep_duration = calculate_sleep_duration()
+        sleep_minutes = sleep_duration / (MILLISECONDS * SECONDS_PER_MINUTE)
+        log(f"Next update will be in {sleep_minutes:.1f} minutes")
+        sleepnow(sleep_duration)
 
     except Exception as e:
         log(f"Error in fetchAndDisplay: {e}")
-        sleepnow(SLEEP_MS)
+        # On error, sleep for an hour and try again
+        sleepnow(SECONDS_PER_HOUR * MILLISECONDS)
 
 # Main function
 if __name__ == "__main__":
@@ -156,5 +204,4 @@ if __name__ == "__main__":
         log("Fresh boot")
 
     log("Starting application...")
-    log(f"Update interval: {SLEEP_MINUTES} minutes")
     fetchAndDisplay() 
