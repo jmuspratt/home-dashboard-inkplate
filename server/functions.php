@@ -7,7 +7,7 @@ use TANIOS\Airtable\Airtable;
 
 
 function wrapText($string) {
-    $lineLength = 63;
+    $lineLength = 62;
     if (strlen($string) > $lineLength) {
         $string = wordwrap($string, $lineLength, "<br />");
     } 
@@ -102,91 +102,109 @@ function getAllowances($records) {
 }
 
 
-
 function getCalendar($keyFilePath, $calendarId) {
+    // Set the timezone to match your local timezone
+    date_default_timezone_set('America/New_York');
 
-    // Step 1: Set up the Google Client with a service account
     $client = new Client();
     $client->setAuthConfig($keyFilePath); 
-    $client->addScope(Calendar::CALENDAR_READONLY); // Set the appropriate scope
+    $client->addScope(Calendar::CALENDAR_READONLY);
 
-    // Step 2: Get the Calendar Service
     $service = new Calendar($client);
 
-    // Step 3: Fetch the events
+    // Set up date range for the query
+    $today = new DateTime();
+    $today->setTime(0, 0); // Start of today
+    
+    $endDate = new DateTime();
+    $endDate->modify('+7 days'); // Look ahead 7 days
+    $endDate->setTime(23, 59, 59); // End of the day
+
+    // Format dates for the API
+    $timeMin = $today->format('Y-m-d\TH:i:sP'); // RFC3339 format
+    $timeMax = $endDate->format('Y-m-d\TH:i:sP'); // RFC3339 format
+
     $events = $service->events->listEvents($calendarId, [
         'maxResults' => 10,
         'orderBy' => 'startTime',
         'singleEvents' => true,
-        'timeMin' => date('c'), // Fetch future events only
+        'timeMin' => $timeMin,
+        'timeMax' => $timeMax,
     ]);
 
     return $events;
-
 }
 
 
 function renderCalendar($events) {
     $output = "";
-    if (count($events->getItems()) == 0) :
+    if (count($events->getItems()) == 0) {
         $output .= "No upcoming events found.\n";
-    else :
+    } else {
         $output .= "<br />--------------------------------------------------------------<br />";
         $output .= ("Calendar<br />");
-        // Track the current day to determine when to add a new heading
-        $currentDay = null;
-
-        foreach ($events->getItems() as $event) :
+        
+        // Get today's date for filtering
+        $today = new DateTime();
+        $today->setTime(0, 0);
+        
+        // Group events by day
+        $eventsByDay = [];
+        
+        foreach ($events->getItems() as $event) {
             $summary = $event->summary ?: 'No summary';
 
-            // Check if start and end dateTime are set before proceeding
-            if (isset($event->start->dateTime) && isset($event->end->dateTime)) :
+            // Handle all-day events
+            if (isset($event->start->date)) {
+                $startDate = new DateTime($event->start->date);
+                $endDate = new DateTime($event->end->date);
+                
+                // Create date range (end date is exclusive in Google Calendar)
+                $dateRange = new DatePeriod($startDate, new DateInterval('P1D'), $endDate);
+
+                // Add event to each day in range
+                foreach ($dateRange as $date) {
+                    if ($date->format('Y-m-d') >= $today->format('Y-m-d')) {
+                        $eventDay = $date->format('l, F j');
+                        $eventsByDay[$eventDay][] = "All day: $summary";
+                    }
+                }
+            }
+            // Handle regular events
+            else if (isset($event->start->dateTime)) {
                 $startDateTime = new DateTime($event->start->dateTime);
-                $endDateTime = new DateTime($event->end->dateTime);
-
-                // Format date and times
-                $eventDay = $startDateTime->format('l, F j'); // e.g., "Monday, September 30"
-                $startTime = $startDateTime->format('g:i a'); // e.g., "4:00 pm" 
-                $endTime = $endDateTime->format('g:i a'); // e.g., "5:15 pm"
-
-                // If this event's date is different from the current day, insert a new heading
-                if ($currentDay !== $eventDay) :
-                    $output .= "<br />$eventDay<br />";
-                    $currentDay = $eventDay;
-                endif;
-
-                // Print the event with formatted times
-                $timeSpan = "{$startTime} - {$endTime}";
-                $output .= "{$timeSpan}: {$summary}<br />";
-            else :
-                // Handle the case where dateTime is not set (e.g., all-day events)
-                if (isset($event->start->date)) :
-                    $eventDay = (new DateTime($event->start->date))->format('l, F j');
-                    
-                    if ($currentDay !== $eventDay) :
-                        $output .= "<br />$eventDay<br />";
-                        $currentDay = $eventDay;
-                    endif;
-
-                    $timeSpan = "All day";
-                    $output .= "{$timeSpan}: {$summary}<br />";
-                endif;
-            endif;
-        endforeach;
-    endif;
+                
+                if ($startDateTime->format('Y-m-d') >= $today->format('Y-m-d')) {
+                    $eventDay = $startDateTime->format('l, F j');
+                    $startTime = $startDateTime->format('g:i a');
+                    $endTime = (new DateTime($event->end->dateTime))->format('g:i a');
+                    $eventsByDay[$eventDay][] = "{$startTime} - {$endTime}: $summary";
+                }
+            }
+        }
+        
+        // Sort and output events by day
+        ksort($eventsByDay);
+        foreach ($eventsByDay as $day => $dayEvents) {
+            $output .= "<br />$day<br />" . implode("<br />", $dayEvents) . "<br />";
+        }
+    }
     echo wrapText($output);
 }
 
 function renderLunch($lunch) {
-// Get the day number
+    // Get the day number
     $todayNumber = date('j');
 
     // Find the record in $lunches whose Day Number field matches $todayNumber
     $todaysLunch = null;
     foreach ($lunch as $record) {
+        if (!isset($record->fields) || !isset($record->fields->{'Day Number'})) {
+            continue;
+        }
         $fields = $record->fields;
         $dayNumber = $fields->{'Day Number'};
-        if ($dayNumber == $todayNumber) {
+        if ($dayNumber == $todayNumber && isset($fields->{'Meal'})) {
             $todaysLunch = $fields->{'Meal'};
             break;
         }
@@ -196,10 +214,12 @@ function renderLunch($lunch) {
     if ($todaysLunch) {
         $output = "<br />--------------------------------------------------------------<br />";
         $output .= ("Lunch<br /><br />");
-        $output .= "Today's lunch is: " . $todaysLunch;
+        $output .= $todaysLunch;
         $output .= "<br />";
-        echo wrapText($output);
+        return $output;
     }
+    
+    return ""; // Return empty string if no lunch found
 }
 
 function renderAllowances($willRecords, $elizaRecords) {
