@@ -9,7 +9,12 @@ use TANIOS\Airtable\Airtable;
 function wrapText($string) {
     $lineLength = 62;
     if (strlen($string) > $lineLength) {
-        $string = wordwrap($string, $lineLength, "<br />");
+        // First, replace any existing <br /> with a temporary marker
+        $string = str_replace('<br />', '||BR||', $string);
+        // Do the word wrap
+        $string = wordwrap($string, $lineLength, '<br />');
+        // Restore any original <br /> tags
+        $string = str_replace('||BR||', '<br />', $string);
     } 
     return $string;
 }
@@ -54,13 +59,12 @@ function renderWeather($weatherData) {
 
     if ($weatherData && isset($weatherData['properties']['periods'])) {
         $todaysWeather = $weatherData['properties']['periods'][0];
-        $output .= $todaysWeather['name'] . ": " . $todaysWeather['detailedForecast'];
-
+        $output .= $todaysWeather['name'] . ": " . wrapText($todaysWeather['detailedForecast']);
     } else {
         $output .= "No weather data available.";
     }
     $output .= "<br />";
-    echo wrapText($output);
+    echo $output;
 }
 
 
@@ -139,10 +143,10 @@ function getCalendar($keyFilePath, $calendarId) {
 function renderCalendar($events) {
     $output = "";
     if (count($events->getItems()) == 0) {
-        $output .= "No upcoming events found.\n";
+        $output .= "No upcoming events found.<br />";
     } else {
         $output .= "<br />--------------------------------------------------------------<br />";
-        $output .= ("Calendar<br />");
+        $output .= "Calendar<br />";
         
         // Get today's date for filtering
         $today = new DateTime();
@@ -166,7 +170,7 @@ function renderCalendar($events) {
                 foreach ($dateRange as $date) {
                     if ($date->format('Y-m-d') >= $today->format('Y-m-d')) {
                         $eventDay = $date->format('l, F j');
-                        $eventsByDay[$eventDay][] = "All day: $summary";
+                        $eventsByDay[$eventDay][] = "All day: " . wrapText($summary);
                     }
                 }
             }
@@ -178,7 +182,7 @@ function renderCalendar($events) {
                     $eventDay = $startDateTime->format('l, F j');
                     $startTime = $startDateTime->format('g:i a');
                     $endTime = (new DateTime($event->end->dateTime))->format('g:i a');
-                    $eventsByDay[$eventDay][] = "{$startTime} - {$endTime}: $summary";
+                    $eventsByDay[$eventDay][] = "{$startTime} - {$endTime}: " . wrapText($summary);
                 }
             }
         }
@@ -189,7 +193,7 @@ function renderCalendar($events) {
             $output .= "<br />$day<br />" . implode("<br />", $dayEvents) . "<br />";
         }
     }
-    echo wrapText($output);
+    echo $output;
 }
 
 function renderLunch($lunch) {
@@ -213,8 +217,8 @@ function renderLunch($lunch) {
     // If a lunch was found, display it
     if ($todaysLunch) {
         $output = "<br />--------------------------------------------------------------<br />";
-        $output .= ("Lunch<br /><br />");
-        $output .= $todaysLunch;
+        $output .= "Lunch<br /><br />";
+        $output .= wrapText($todaysLunch);
         $output .= "<br />";
         return $output;
     }
@@ -223,49 +227,17 @@ function renderLunch($lunch) {
 }
 
 function renderAllowances($willRecords, $elizaRecords) {
-
-    $willLastFive = array_slice($willRecords, 0, 5);
     $willBalanceUSD = getAllowances($willRecords)[0];
     $willBalanceEUR = getAllowances($willRecords)[1];
-
-    $elizaLastFive = array_slice($elizaRecords, 0, 5);
     $elizaBalanceUSD = getAllowances($elizaRecords)[0];
     $elizaBalanceEUR = getAllowances($elizaRecords)[1];
 
-
-    // foreach ($willLastFive as $record) {
-    //     $fields = $record->fields;
-
-    //     $amountUSD = $fields->{'Amount USD'} ?? false;
-    //     $amountEUR = $fields->{'Amount EUR'} ?? false;
-    //     $created = $fields->{'Created Timestamp'} ?? false;
-    //     $description = $fields->Description ?? false;
-    
-    //     $created_pretty = date('l, F j', strtotime($created)) ?? false;
-    //     $amountUSD_pretty = $amountUSD ? number_format($amountUSD, 2)  : false;
-    //     $amountEUR_pretty = $amountEUR ? number_format($amountEUR, 2) : false;
-
-    //     if ($created_pretty) :
-    //         echo "<br />" . $created_pretty ."<br />";
-    //     endif;
-    //     if ($description) :
-    //         echo $description ."<br />";
-    //     endif;
-    //     if ($amountUSD_pretty) :
-    //         echo "Amount USD:" . $amountUSD_pretty . "<br />";
-    //     endif;
-    //     if ($amountEUR_pretty) :
-    //         echo "Amount EUR:" . $amountEUR_pretty . "<br />";
-    //     endif;
-
-    // }
-
     $output = "<br />--------------------------------------------------------------<br />";
-    $output .= ("Allowance Balances<br /><br />");
-    $output .= ("Will: $" . number_format($willBalanceUSD, 2)) . "<br />";
-    $output .= ("Eliza: $" . number_format($elizaBalanceUSD, 2));
+    $output .= "Allowance Balances<br /><br />";
+    $output .= "Will: $" . number_format($willBalanceUSD, 2) . "<br />";
+    $output .= "Eliza: $" . number_format($elizaBalanceUSD, 2);
     $output .= "<br />";
-    echo wrapText($output);
+    echo $output;
 }
 
 
