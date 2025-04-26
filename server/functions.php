@@ -169,8 +169,14 @@ function renderCalendar($events) {
                 // Add event to each day in range
                 foreach ($dateRange as $date) {
                     if ($date->format('Y-m-d') >= $today->format('Y-m-d')) {
-                        $eventDay = $date->format('l, F j');
-                        $eventsByDay[$eventDay][] = "All day: " . wrapText($summary);
+                        $eventDay = $date->format('Y-m-d'); // Use Y-m-d for sorting
+                        if (!isset($eventsByDay[$eventDay])) {
+                            $eventsByDay[$eventDay] = [
+                                'display' => $date->format('l, F j'),
+                                'events' => []
+                            ];
+                        }
+                        $eventsByDay[$eventDay]['events'][] = "All day: " . wrapText($summary);
                     }
                 }
             }
@@ -179,18 +185,26 @@ function renderCalendar($events) {
                 $startDateTime = new DateTime($event->start->dateTime);
                 
                 if ($startDateTime->format('Y-m-d') >= $today->format('Y-m-d')) {
-                    $eventDay = $startDateTime->format('l, F j');
+                    $eventDay = $startDateTime->format('Y-m-d'); // Use Y-m-d for sorting
+                    if (!isset($eventsByDay[$eventDay])) {
+                        $eventsByDay[$eventDay] = [
+                            'display' => $startDateTime->format('l, F j'),
+                            'events' => []
+                        ];
+                    }
                     $startTime = $startDateTime->format('g:i a');
                     $endTime = (new DateTime($event->end->dateTime))->format('g:i a');
-                    $eventsByDay[$eventDay][] = "{$startTime} - {$endTime}: " . wrapText($summary);
+                    $eventsByDay[$eventDay]['events'][] = "{$startTime} - {$endTime}: " . wrapText($summary);
                 }
             }
         }
         
-        // Sort and output events by day
+        // Sort by date (Y-m-d format ensures chronological order)
         ksort($eventsByDay);
-        foreach ($eventsByDay as $day => $dayEvents) {
-            $output .= "<br />$day<br />" . implode("<br />", $dayEvents) . "<br />";
+        
+        // Output events by day
+        foreach ($eventsByDay as $day => $dayData) {
+            $output .= "<br />" . $dayData['display'] . "<br />" . implode("<br />", $dayData['events']) . "<br />";
         }
     }
     echo $output;
