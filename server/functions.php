@@ -59,7 +59,7 @@ function renderWeather($weatherData) {
 
     if ($weatherData && isset($weatherData['properties']['periods'])) {
         $todaysWeather = $weatherData['properties']['periods'][0];
-        $output .= $todaysWeather['name'] . ": " . wrapText($todaysWeather['detailedForecast']);
+        $output .= wrapText($todaysWeather['name'] . ": " . $todaysWeather['detailedForecast']);
     } else {
         $output .= "No weather data available.";
     }
@@ -194,7 +194,8 @@ function renderCalendar($events) {
                     }
                     $startTime = $startDateTime->format('g:i a');
                     $endTime = (new DateTime($event->end->dateTime))->format('g:i a');
-                    $eventsByDay[$eventDay]['events'][] = "{$startTime} - {$endTime}: " . wrapText($summary);
+                    $eventText = "{$startTime} - {$endTime}: " . $summary;
+                    $eventsByDay[$eventDay]['events'][] = wrapText($eventText);
                 }
             }
         }
