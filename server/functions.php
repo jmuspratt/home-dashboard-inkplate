@@ -215,7 +215,7 @@ function renderLunch($lunch) {
     // Get the day number
     $todayNumber = date('j');
 
-    // Find the record in $lunches whose Day Number field matches $todayNumber
+    // Find the record in $lunch whose Day Number field matches $todayNumber
     $todaysLunch = null;
     foreach ($lunch as $record) {
         if (!isset($record->fields) || !isset($record->fields->{'Day Number'})) {
@@ -235,10 +235,10 @@ function renderLunch($lunch) {
         $output .= "Lunch<br /><br />";
         $output .= wrapText($todaysLunch);
         $output .= "<br />";
-        return $output;
+        echo $output;
     }
     
-    return ""; // Return empty string if no lunch found
+    echo ""; // Return empty string if no lunch found
 }
 
 function renderAllowances($willRecords, $elizaRecords) {
