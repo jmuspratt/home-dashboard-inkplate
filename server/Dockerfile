@@ -17,6 +17,9 @@ RUN composer require google/apiclient:^2.0
 # Enable Apache rewrite module (optional, useful for routing)
 RUN a2enmod rewrite
 
+# Set ServerName to suppress warning messages
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
 # Set the working directory in the container
 WORKDIR /var/www/html
 

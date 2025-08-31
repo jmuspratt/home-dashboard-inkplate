@@ -70,27 +70,39 @@ function renderWeather($weatherData) {
 
 function getAirtableRecords($table, $key, $baseID) {
     
-    $airtable = new Airtable(array(
-        'api_key'   => $key,
-        'base'      => $baseID
-    ));
-    
-    $params = array(
-        "pageSize" => 99,
-        "maxRecords" => 999
-    );
-    
-    $request = $airtable->getContent($table, $params);
-    $allRecords = [];
+    try {
+        $airtable = new Airtable(array(
+            'api_key'   => $key,
+            'base'      => $baseID
+        ));
+        
+        $params = array(
+            "pageSize" => 99,
+            "maxRecords" => 999
+        );
+        
+        $request = $airtable->getContent($table, $params);
+        $allRecords = [];
 
-    do {
-        $response = $request->getResponse();
-        if ($response):
-            $allRecords = array_merge($allRecords, $response->records);
-        endif;
-    } while ($request = $response->next());
+        do {
+            $response = $request->getResponse();
+            if ($response && isset($response->records) && is_array($response->records)):
+                $allRecords = array_merge($allRecords, $response->records);
+            elseif ($response):
+                error_log("Airtable API response missing records field for table: $table. Response structure: " . print_r($response, true));
+                break;
+            else:
+                error_log("Airtable API returned null response for table: $table");
+                break;
+            endif;
+        } while ($request = $response->next());
 
-    return $allRecords;
+        return $allRecords;
+        
+    } catch (Exception $e) {
+        error_log("Airtable API error for table $table: " . $e->getMessage());
+        return [];
+    }
 }
 
 // Loop through all records and sum up both Amount USD and Amount EUR fields, then return both
@@ -242,11 +254,12 @@ function renderLunch($lunch) {
 }
 
 function renderAllowances($willRecords, $elizaRecords) {
-    $willBalanceUSD = getAllowances($willRecords)[0];
-    $willBalanceEUR = getAllowances($willRecords)[1];
-    $elizaBalanceUSD = getAllowances($elizaRecords)[0];
-    $elizaBalanceEUR = getAllowances($elizaRecords)[1];
-
+    $willAllowances = getAllowances($willRecords);
+    $elizaAllowances = getAllowances($elizaRecords);
+    $willBalanceUSD = $willAllowances[0];
+    $willBalanceEUR = $willAllowances[1];
+    $elizaBalanceUSD = $elizaAllowances[0];
+    $elizaBalanceEUR = $elizaAllowances[1];
     $output = "<br />--------------------------------------------------------------<br />";
     $output .= "Allowance Balances<br /><br />";
     $output .= "Will: $" . number_format($willBalanceUSD, 2) . "<br />";
